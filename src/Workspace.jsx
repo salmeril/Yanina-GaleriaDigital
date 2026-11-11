@@ -236,7 +236,7 @@ export default function Workspace({ account, onCatalogChange }) {
           perfil y guardar tus obras.
         </p>
         <a className="button" href="#/galeria">
-          Recorré la galería ↗
+          Recorré la galería
         </a>
       </section>
     );
@@ -462,7 +462,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
               </button>
               {data.profile.is_public && (
                 <a className="text-link" href={`#/artistas/${user.id}`}>
-                  Ver mi sala ↗
+                  Ver mi sala
                 </a>
               )}
             </form>

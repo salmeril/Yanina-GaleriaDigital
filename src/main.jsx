@@ -7,6 +7,7 @@ import {
   formatPrice,
 } from "./data";
 import "./styles.css";
+import "./design.css";
 import { backend, loadCatalog, friendlyError } from "./backend";
 import Workspace, { useAccount } from "./Workspace";
 
@@ -182,7 +183,7 @@ function App() {
               <div className="art-frame">
                 <ArtworkImage artwork={work} />
                 <span className="expand" aria-hidden="true">
-                  ↗
+                  <span className="arrow-icon" />
                 </span>
               </div>
             </button>
@@ -201,7 +202,7 @@ function App() {
               </button>
             </h3>
             <a className="artist-credit" href={`#/artistas/${work.artistId}`}>
-              {artists.find((person) => person.id === work.artistId)?.name} ↗
+              {artists.find((person) => person.id === work.artistId)?.name}
             </a>
             <div className="price-row">
               <strong>
@@ -242,7 +243,7 @@ function App() {
                 {backend ? "Conocé su sala" : "Perfil de ejemplo"}
               </span>
               <span className="collection-arrow" aria-hidden="true">
-                ↗
+                <span className="arrow-icon" />
               </span>
             </div>
             <h3>{person.name}</h3>
@@ -283,7 +284,7 @@ function App() {
             Selección ({cart.length})
           </a>
           <a className="access-link" href="#/mi-espacio">
-            Mi espacio ↗
+            Mi espacio <span className="arrow-icon" aria-hidden="true" />
           </a>
         </nav>
       </header>
@@ -320,42 +321,70 @@ function App() {
             <section className="hero wrap">
               <div className="hero-copy reveal">
                 <p className="eyebrow">
-                  <span className="dot" /> Arte visual · Música · Encuentros
+                  <span className="dot" /> Una galería. Muchas formas de crear.
                 </p>
                 <h1>
-                  Muchas miradas.
-                  <br />
-                  Un lugar para
-                  <br />
-                  <em>encontrarlas.</em>
+                  <span>El arte</span>
+                  <span>nos</span>
+                  <em>encuentra.</em>
                 </h1>
                 <p className="lead">
-                  Descubrí artistas y compositores, recorré sus obras y encontrá
-                  una creación para llevar a tu mundo.
+                  Descubrí artistas y compositores. Encontrá una obra que te
+                  mueva, en la forma que más conecte con vos.
                 </p>
-                <a className="button" href="#/galeria">
-                  Explorá las obras ↗
-                </a>
-                <p className="hero-footnote">
-                  Originales físicos, arte digital y composiciones.
-                </p>
+                <div className="hero-actions">
+                  <a className="button" href="#/galeria">
+                    Explorá las obras{" "}
+                    <span className="arrow-icon" aria-hidden="true" />
+                  </a>
+                  <a className="hero-secondary" href="#/artistas">
+                    Conocé a sus artistas
+                  </a>
+                </div>
               </div>
               <div className="hero-art reveal">
                 <div className="hero-sticker">
-                  Cada obra.
+                  Visual.
                   <br />
-                  Un universo.
+                  Sonoro.
+                  <br />
+                  <em>Colectivo.</em>
                 </div>
                 <div className="hero-paper">
-                  <ArtworkImage artwork={initialArtworks[0]} />
+                  <ArtworkImage artwork={published[0] || initialArtworks[0]} />
                   <div className="paper-caption">
-                    <span>Galería colectiva</span>
-                    <span>Adelanto visual / 03</span>
+                    <span>Una obra, una mirada.</span>
+                    <span aria-hidden="true" className="arrow-icon" />
                   </div>
                 </div>
                 <div className="mini-paper">
-                  <ArtworkImage artwork={initialArtworks[2]} />
+                  <ArtworkImage
+                    artwork={
+                      published.find((work) => work.type === "digital") ||
+                      initialArtworks[2]
+                    }
+                  />
                 </div>
+                <div className="sound-card" aria-hidden="true">
+                  <span>
+                    La música
+                    <br />
+                    también es arte.
+                  </span>
+                  <div className="sound-bars">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((bar) => (
+                      <i key={bar} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="hero-bottom">
+                <span>ARTE VISUAL</span>
+                <span>MÚSICA Y COMPOSICIÓN</span>
+                <span>UN ESPACIO COMPARTIDO</span>
+                <a href="#/galeria" aria-label="Explorar el catálogo">
+                  <span className="arrow-icon" aria-hidden="true" />
+                </a>
               </div>
             </section>
             <div className="ticker" aria-hidden="true">
@@ -368,18 +397,77 @@ function App() {
                 ))}
               </div>
             </div>
-            <section className="section wrap">
+            <section className="section wrap formats-section">
+              <div className="section-top reveal">
+                <div>
+                  <p className="eyebrow">Encontrá tu próximo recorrido</p>
+                  <h2>
+                    El arte toma
+                    <br />
+                    <em>muchas formas.</em>
+                  </h2>
+                </div>
+                <p className="section-description">
+                  Elegí por dónde empezar. Cada formato abre una manera distinta
+                  de encontrarte con una obra.
+                </p>
+              </div>
+              <div className="format-grid">
+                {[
+                  {
+                    id: "fisica",
+                    number: "01",
+                    name: "Obras físicas",
+                    text: "Originales y piezas para habitar tus espacios.",
+                    palette: "format-orange",
+                    label: "Ver obras físicas",
+                  },
+                  {
+                    id: "digital",
+                    number: "02",
+                    name: "Arte digital",
+                    text: "Creaciones que viajan con vos en nuevos formatos.",
+                    palette: "format-purple",
+                    label: "Ver arte digital",
+                  },
+                  {
+                    id: "musica",
+                    number: "03",
+                    name: "Música y partituras",
+                    text: "Composiciones para escuchar y descubrir.",
+                    palette: "format-blue",
+                    label: "Ver música y partituras",
+                  },
+                ].map((format) => (
+                  <a
+                    className={`format-card ${format.palette} reveal`}
+                    key={format.id}
+                    href="#/galeria"
+                    onClick={() => setFilter(format.id)}
+                    aria-label={format.label}
+                  >
+                    <div className="format-top">
+                      <span>{format.number}</span>
+                      <span className="arrow-icon" aria-hidden="true" />
+                    </div>
+                    <h3>{format.name}</h3>
+                    <p>{format.text}</p>
+                  </a>
+                ))}
+              </div>
+            </section>
+            <section className="section wrap featured-section">
               <div className="section-top reveal">
                 <div>
                   <p className="eyebrow">Descubrir una obra</p>
                   <h2>
-                    Algo te encuentra.
+                    Explorá.
                     <br />
-                    <em>Algo se queda.</em>
+                    <em>Dejate encontrar.</em>
                   </h2>
                 </div>
                 <a className="text-link" href="#/galeria">
-                  Ver el catálogo ↗
+                  Ver el catálogo
                 </a>
               </div>
               {gallery(published.slice(0, 3))}
@@ -394,7 +482,7 @@ function App() {
                   <h2>
                     Tu obra.
                     <br />
-                    Tu propio espacio.
+                    Más encuentros.
                   </h2>
                   <p>
                     La plataforma está pensada para que artistas y compositores
@@ -402,7 +490,7 @@ function App() {
                     a nuevas personas.
                   </p>
                   <a className="button light" href="#/mi-espacio">
-                    Entrá a tu espacio ↗
+                    Entrá a tu espacio
                   </a>
                 </div>
               </div>
@@ -416,7 +504,7 @@ function App() {
                   </h2>
                 </div>
                 <a className="text-link" href="#/artistas">
-                  Todas las salas ↗
+                  Todas las salas
                 </a>
               </div>
               {artistCards()}
@@ -514,7 +602,7 @@ function App() {
               target="_blank"
               rel="noreferrer"
             >
-              Conocé a Yanina ↗
+              Conocé a Yanina
             </a>
           </section>
         )}
@@ -590,7 +678,7 @@ function App() {
                     costos adicionales se definirán antes de cobrar.
                   </p>
                   <button className="button" onClick={() => setReviewed(true)}>
-                    Revisar pedido de ejemplo ↗
+                    Revisar pedido de ejemplo
                   </button>
                   {reviewed && (
                     <p role="status" className="demo-note">
@@ -605,7 +693,7 @@ function App() {
               <div className="empty-state">
                 <p>Todavía no seleccionaste obras.</p>
                 <a className="button" href="#/galeria">
-                  Explorá el catálogo ↗
+                  Explorá el catálogo
                 </a>
               </div>
             )}
@@ -615,7 +703,7 @@ function App() {
           <section className="section wrap">
             <h1 className="page-title">Busquemos otro recorrido.</h1>
             <a className="button" href="#/">
-              Volver al inicio ↗
+              Volver al inicio
             </a>
           </section>
         )}
@@ -626,7 +714,7 @@ function App() {
           <p>Un espacio para artistas, compositores y sus obras.</p>
         </div>
         <div>
-          <a href="#/yanina">Conocé a Yanina ↗</a>
+          <a href="#/yanina">Conocé a Yanina </a>
           <span>Nombre provisional · Galería en desarrollo</span>
         </div>
       </footer>
@@ -656,7 +744,6 @@ function App() {
                     artists.find((person) => person.id === selected.artistId)
                       ?.name
                   }{" "}
-                  ↗
                 </a>
                 <p>{selected.details}</p>
                 <p>

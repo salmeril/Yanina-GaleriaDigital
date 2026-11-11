@@ -25,7 +25,8 @@ Sin las dos variables de conexión la web muestra el catálogo ficticio y el acc
 - `src/Workspace.jsx` contiene las cuentas y el panel de artistas.
 - `src/backend.js` integra autenticación, datos y archivos.
 - `src/data.js` contiene las obras ficticias para el modo de muestra y las etiquetas de formato.
-- `src/styles.css` contiene el diseño y la paleta adaptada de las piezas de Yanina.
+- `src/styles.css` contiene los estilos base y del panel.
+- `src/design.css` aplica la dirección visual inspirada en la referencia de video, con portada, bloques de color, tarjetas y animaciones al recorrer la página.
 - `netlify.toml` contiene el comando de compilación y la salida para Netlify.
 
 ## Identidad y alcance
