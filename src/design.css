@@ -921,3 +921,50 @@ h2 em {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M4 16 16 4M4 4h12v12' fill='none' stroke='black' stroke-width='1.7'/%3E%3C/svg%3E")
     center / contain no-repeat;
 }
+
+.developer-credit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-block: 22px 30px;
+  border-top: 1px solid #dccccf;
+}
+.developer-credit > span {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+}
+.developer-credit a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--violet);
+}
+.developer-credit a:hover {
+  color: #36123e;
+}
+.otb-mark {
+  font-family: "Manrope", sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  border: 1px solid currentColor;
+  line-height: 1;
+  padding: 8px 11px 9px 8px;
+}
+.otb-name {
+  font-family: "Manrope", sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 1px;
+}
+.developer-credit a .arrow-icon {
+  margin-left: 4px;
+}
+@media (max-width: 380px) {
+  .developer-credit {
+    flex-wrap: wrap;
+  }
+}

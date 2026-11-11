@@ -718,6 +718,23 @@ function App() {
           <span>Nombre provisional · Galería en desarrollo</span>
         </div>
       </footer>
+      <div className="developer-credit wrap">
+        <span>Diseño y desarrollo</span>
+        <a
+          href="https://www.instagram.com/otbcreativestudio/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="OTB Creative Studio, diseño y desarrollo. Abrir Instagram en otra pestaña"
+        >
+          <strong className="otb-mark">OTB</strong>
+          <span className="otb-name">
+            CREATIVE
+            <br />
+            STUDIO
+          </span>
+          <span className="arrow-icon" aria-hidden="true" />
+        </a>
+      </div>
       <dialog
         ref={dialogRef}
         className="art-dialog"

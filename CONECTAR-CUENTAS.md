@@ -126,3 +126,29 @@ Antes de habilitar ventas y el registro al público, completaremos los datos rea
 Se compilaron el modo de muestra y el modo conectado con variables de prueba. Se ejecutó el esquema dos veces en un PostgreSQL de prueba y se comprobaron restricciones de lectura y escritura para dos autores y un visitante. Se probaron la privacidad de los borradores, el acceso a sus archivos, la publicación, el ocultamiento y los conflictos de versión.
 
 El registro por correo, la recuperación y las transferencias reales de archivos necesitan una prueba final con tu proyecto Supabase, su remitente SMTP y las variables cargadas en Netlify.
+
+## Seguridad aplicada en esta actualización
+
+La compilación genera `dist/_headers`. Netlify aplica esas cabeceras a los archivos estáticos al desplegar. La política CSP limita scripts a la propia web y las conexiones al proyecto Supabase configurado. También permite las tipografías de Google que usa el diseño. Las portadas y muestras se cargan desde el mismo proyecto Supabase.
+
+Se incorporan protección contra la carga de la web dentro de páginas ajenas, prevención de detección incorrecta de tipos de archivo, política de referencias, conexión HTTPS y restricciones de acceso a cámara, micrófono, ubicación y API de pagos del navegador. Al integrar un proveedor de pagos o un servicio externo será necesario revisar las cabeceras para autorizar sus dominios específicos.
+
+`vite.config.js` valida que se configure una URL HTTPS y una clave Publishable o anon. Una clave Secret o service_role impide compilar. Si se expuso una clave privada en un repositorio o despliegue anterior, revocala en Supabase y reemplazala. La validación nueva no revoca claves ya publicadas.
+
+La revisión de dependencias con `npm audit --omit=dev` no encontró vulnerabilidades conocidas al preparar esta actualización. Este resultado cubre los avisos de dependencias del registro en ese momento. Las reglas de base de datos se probaron por separado con dos autores y un visitante.
+
+### Configuración que falta comprobar en las cuentas del proyecto
+
+- Activar autenticación en dos pasos en GitHub, Netlify y Supabase para quienes administren el proyecto.
+- Mantener la confirmación de email y revisar los límites de intentos de Supabase Auth.
+- Si se decide activar CAPTCHA, conectar primero su widget en los formularios. La interfaz actual todavía no envía tokens CAPTCHA.
+- Definir y probar un respaldo de la base de datos y de los archivos. La disponibilidad de copias y recuperación depende del servicio contratado.
+- Publicar esta versión y comprobar en las respuestas HTTP de Netlify que aparezcan Content-Security-Policy y X-Frame-Options. El entorno local de Vite no aplica el archivo _headers.
+- Repetir las pruebas de dos cuentas con el proyecto Supabase real antes de abrir el registro al público.
+
+Referencias oficiales.
+
+- https://docs.netlify.com/manage/routing/headers/
+- https://docs.netlify.com/manage/security/content-security-policy/
+- https://supabase.com/docs/guides/auth/rate-limits
+- https://supabase.com/docs/guides/auth/auth-captcha
