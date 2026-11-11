@@ -1,12 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   artworks as initialArtworks,
-  artists,
+  artists as initialArtists,
   workTypes,
   formatPrice,
 } from "./data";
 import "./styles.css";
+import { backend, loadCatalog, friendlyError } from "./backend";
+import Workspace, { useAccount } from "./Workspace";
 
 function ArtworkImage({ artwork, className = "" }) {
   if (artwork.image)
@@ -56,9 +58,45 @@ function Brand() {
 }
 
 function App() {
-  const [route, setRoute] = useState(() => location.hash.slice(1) || "/");
+  const [route, setRoute] = useState(() =>
+    location.hash.startsWith("#/") ? location.hash.slice(1) : "/",
+  );
   const [filter, setFilter] = useState("todas");
-  const [artworks, setArtworks] = useState(initialArtworks);
+  const [artworks, setArtworks] = useState(backend ? [] : initialArtworks);
+  const [artists, setArtists] = useState(backend ? [] : initialArtists);
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(Boolean(backend));
+  const catalogRequest = useRef(0);
+  const account = useAccount();
+  const refreshCatalog = useCallback(async () => {
+    if (!backend) return;
+    const revision = ++catalogRequest.current;
+    setCatalogLoading(true);
+    try {
+      const data = await loadCatalog();
+      if (revision !== catalogRequest.current) return;
+      setArtists(data.artists);
+      setArtworks(data.artworks);
+      setCatalogError("");
+    } catch (error) {
+      if (revision !== catalogRequest.current) return;
+      setArtists([]);
+      setArtworks([]);
+      setCatalogError(friendlyError(error));
+    } finally {
+      if (revision === catalogRequest.current) setCatalogLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    refreshCatalog();
+    const timer = setInterval(refreshCatalog, 8 * 60 * 1000);
+    window.addEventListener("focus", refreshCatalog);
+    return () => {
+      catalogRequest.current += 1;
+      clearInterval(timer);
+      window.removeEventListener("focus", refreshCatalog);
+    };
+  }, [refreshCatalog, account.session?.user.id]);
   const [cart, setCart] = useState([]);
   const [selected, setSelected] = useState(null);
   const [notice, setNotice] = useState("");
@@ -85,7 +123,7 @@ function App() {
 
   useEffect(() => {
     const navigate = () => {
-      setRoute(location.hash.slice(1) || "/");
+      setRoute(location.hash.startsWith("#/") ? location.hash.slice(1) : "/");
       setSelected(null);
     };
     window.addEventListener("hashchange", navigate);
@@ -96,6 +134,9 @@ function App() {
     window.scrollTo({ top: 0, behavior: "instant" });
     if (!firstRoute.current) mainRef.current?.focus({ preventScroll: true });
     firstRoute.current = false;
+  }, [route]);
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries)
@@ -186,13 +227,20 @@ function App() {
             href={`#/artistas/${person.id}`}
           >
             <div className="collection-art">
-              <ArtworkImage
-                artwork={
-                  published.find((work) => work.artistId === person.id) ||
-                  initialArtworks[0]
-                }
-              />
-              <span className="collection-tag">Perfil de ejemplo</span>
+              {published.some((work) => work.artistId === person.id) ? (
+                <ArtworkImage
+                  artwork={published.find(
+                    (work) => work.artistId === person.id,
+                  )}
+                />
+              ) : (
+                <div className="artist-cover-placeholder" aria-hidden="true">
+                  {person.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <span className="collection-tag">
+                {backend ? "Conocé su sala" : "Perfil de ejemplo"}
+              </span>
               <span className="collection-arrow" aria-hidden="true">
                 ↗
               </span>
@@ -218,7 +266,9 @@ function App() {
         Ir al contenido
       </a>
       <div className="edition">
-        ADELANTO DE LA PLATAFORMA · ARTISTAS, OBRAS Y PRECIOS DE EJEMPLO
+        {backend
+          ? "GALERÍA COLECTIVA · ARTE VISUAL · MÚSICA · ENCUENTROS"
+          : "ADELANTO DE LA PLATAFORMA · ARTISTAS, OBRAS Y PRECIOS DE EJEMPLO"}
       </div>
       <header className="header wrap">
         <Brand />
@@ -241,6 +291,30 @@ function App() {
         {notice}
       </div>
       <main id="contenido" ref={mainRef} tabIndex="-1">
+        {catalogLoading && (
+          <p className="wrap delivery-note" role="status">
+            Actualizando la galería…
+          </p>
+        )}
+        {catalogError && (
+          <div className="wrap">
+            <p className="form-error" role="alert">
+              No se pudo cargar la galería. {catalogError}
+            </p>
+            <button className="text-button" onClick={refreshCatalog}>
+              Volver a intentar
+            </button>
+          </div>
+        )}
+        {backend &&
+          !catalogLoading &&
+          !catalogError &&
+          !published.length &&
+          route === "/galeria" && (
+            <p className="wrap delivery-note">
+              La primera selección de obras se está preparando.
+            </p>
+          )}
         {route === "/" && (
           <>
             <section className="hero wrap">
@@ -328,7 +402,7 @@ function App() {
                     a nuevas personas.
                   </p>
                   <a className="button light" href="#/mi-espacio">
-                    Conocé el panel de prueba ↗
+                    Entrá a tu espacio ↗
                   </a>
                 </div>
               </div>
@@ -445,17 +519,7 @@ function App() {
           </section>
         )}
         {route === "/mi-espacio" && (
-          <CreatorPanel
-            artworks={artworks}
-            onCreate={(work) => setArtworks((current) => [...current, work])}
-            onPublish={(id) =>
-              setArtworks((current) =>
-                current.map((work) =>
-                  work.id === id ? { ...work, status: "publicada" } : work,
-                ),
-              )
-            }
-          />
+          <Workspace account={account} onCatalogChange={refreshCatalog} />
         )}
         {route === "/pedido" && (
           <section className="section wrap">
@@ -563,7 +627,7 @@ function App() {
         </div>
         <div>
           <a href="#/yanina">Conocé a Yanina ↗</a>
-          <span>Nombre provisional · Versión de demostración</span>
+          <span>Nombre provisional · Galería en desarrollo</span>
         </div>
       </footer>
       <dialog
@@ -595,7 +659,10 @@ function App() {
                   ↗
                 </a>
                 <p>{selected.details}</p>
-                <p>{formatPrice(selected.price)} ARS · Precio de ejemplo</p>
+                <p>
+                  {formatPrice(selected.price)} ARS{" "}
+                  {selected.artist_id ? "" : "· Precio de ejemplo"}
+                </p>
               </div>
               <button
                 className="small-button"
@@ -612,9 +679,17 @@ function App() {
                   controls
                   preload="none"
                   src={selected.audio}
-                  aria-label="Muestra sonora sintética de demostración"
+                  aria-label={
+                    selected.artist_id
+                      ? `Audio de muestra de ${selected.title}`
+                      : "Muestra sonora sintética de demostración"
+                  }
                 />
-                <p>Audio sintético de ejemplo para probar el reproductor.</p>
+                <p>
+                  {selected.artist_id
+                    ? "Audio de muestra del autor."
+                    : "Audio sintético de ejemplo para probar el reproductor."}
+                </p>
               </div>
             )}
             <p className="demo-note">
@@ -626,238 +701,6 @@ function App() {
         )}
       </dialog>
     </>
-  );
-}
-
-function CreatorPanel({ artworks, onCreate, onPublish }) {
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [type, setType] = useState("fisica");
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  async function submit(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const values = new FormData(form);
-    setError("");
-    setMessage("");
-    const price = Number(values.get("price"));
-    if (!Number.isFinite(price) || price <= 0) {
-      setError("Ingresá un precio mayor a cero.");
-      return;
-    }
-    const file = values.get("image");
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Para esta prueba elegí una imagen de hasta 2 MB.");
-      return;
-    }
-    if (
-      file.size &&
-      !["image/jpeg", "image/png", "image/webp"].includes(file.type)
-    ) {
-      setError("Elegí una imagen JPG, PNG o WebP.");
-      return;
-    }
-    if (file.size && !String(values.get("alt")).trim()) {
-      setError(
-        "Describí la imagen para las personas que usan lectores de pantalla.",
-      );
-      return;
-    }
-    setBusy(true);
-    try {
-      let image = "";
-      if (file.size)
-        image = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () =>
-            reject(new Error("No pudimos leer la imagen. Probá con otra."));
-          reader.readAsDataURL(file);
-        });
-      if (!mounted.current) return;
-      onCreate({
-        id: crypto.randomUUID(),
-        title: String(values.get("title")).trim(),
-        artistId: values.get("artistId"),
-        type: values.get("type"),
-        medium: String(values.get("medium")).trim(),
-        details: String(values.get("details")).trim(),
-        price,
-        image,
-        alt: String(values.get("alt")).trim(),
-        palette: "coral",
-        status: "borrador",
-        demoUpload: true,
-      });
-      form.reset();
-      setType("fisica");
-      setMessage(
-        "Borrador creado. Abajo podés mostrarlo en el catálogo de prueba.",
-      );
-    } catch (failure) {
-      if (mounted.current) setError(failure.message);
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  }
-
-  return (
-    <section className="section wrap">
-      <p className="eyebrow">Mi espacio · Panel de demostración</p>
-      <h1 className="page-title">
-        Dale lugar
-        <br />a tu <em>obra.</em>
-      </h1>
-      <p className="lead">
-        Probá cómo se cargará una obra física, una creación digital o una
-        composición.
-      </p>
-      <p className="demo-note">
-        Prueba sin inicio de sesión. Los cambios viven en esta pestaña y se
-        pierden al recargar. En la plataforma real cada persona tendrá su cuenta
-        y permisos sobre su propio catálogo.
-      </p>
-      <div className="creator-grid">
-        <form className="creator-form" onSubmit={submit}>
-          <label>
-            Perfil de ejemplo
-            <select name="artistId">
-              {artists.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Título de la obra
-            <input name="title" required maxLength="100" />
-          </label>
-          <div className="form-row">
-            <label>
-              Formato
-              <select
-                name="type"
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-              >
-                {workTypes
-                  .filter((item) => item.id !== "todas")
-                  .map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              Precio de prueba · ARS
-              <input
-                name="price"
-                type="number"
-                required
-                min="1"
-                step="1"
-                max="999999999"
-              />
-            </label>
-          </div>
-          <label>
-            Técnica o disciplina
-            <input
-              name="medium"
-              required
-              maxLength="100"
-              placeholder="Ej. Acuarela, ilustración o composición"
-            />
-          </label>
-          <label>
-            {type === "fisica"
-              ? "Medidas, materiales y presentación"
-              : "Formato de entrega y licencia de uso"}
-            <textarea
-              name="details"
-              required
-              maxLength="700"
-              rows="3"
-              placeholder={
-                type === "fisica"
-                  ? "Ej. 30 × 40 cm, papel, sin marco"
-                  : "Ej. WAV + PDF, uso personal"
-              }
-            />
-          </label>
-          <label>
-            Imagen de portada · JPG, PNG o WebP, hasta 2 MB
-            <input
-              name="image"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-            />
-          </label>
-          <label>
-            Descripción visual de la imagen
-            <input name="alt" maxLength="250" />
-          </label>
-          {type !== "fisica" && (
-            <p className="demo-note">
-              En esta prueba se carga la portada. La subida privada del archivo
-              vendido y del audio de muestra queda pendiente.
-            </p>
-          )}
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-          <p role="status">{message}</p>
-          <button className="button" type="submit" disabled={busy}>
-            {busy ? "Leyendo imagen…" : "Guardar borrador de prueba ↗"}
-          </button>
-        </form>
-        <aside className="panel-list">
-          <h2>Tus obras de prueba</h2>
-          <p className="delivery-note">
-            Los borradores se pueden mostrar en el catálogo de esta pestaña.
-          </p>
-          {artworks.filter((work) => work.demoUpload).length === 0 && (
-            <p className="empty-state">Tu primera obra va a aparecer acá.</p>
-          )}
-          {artworks
-            .filter((work) => work.demoUpload)
-            .map((work) => (
-              <article className="draft-card" key={work.id}>
-                <ArtworkImage artwork={work} />
-                <h3>{work.title}</h3>
-                <p>{formatPrice(work.price)} ARS</p>
-                <p>
-                  {work.status === "borrador"
-                    ? "Borrador de prueba"
-                    : "Visible en el catálogo de prueba"}
-                </p>
-                {work.status === "borrador" ? (
-                  <button
-                    className="small-button"
-                    onClick={() => onPublish(work.id)}
-                  >
-                    Mostrar en el catálogo de prueba
-                  </button>
-                ) : (
-                  <a className="text-link" href="#/galeria">
-                    Ver en galería ↗
-                  </a>
-                )}
-              </article>
-            ))}
-        </aside>
-      </div>
-    </section>
   );
 }
 

@@ -1403,3 +1403,91 @@ body:has(dialog[open]) {
     height: 5px;
   }
 }
+
+/* Cuentas reales y panel personal */
+.account-box {
+  padding: 28px;
+  margin-top: 30px;
+  background: #fffaf2;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.account-box > h2 {
+  font-size: 29px;
+  margin-bottom: 24px;
+}
+.account-box .creator-form {
+  margin-top: 24px;
+}
+.account-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.account-actions .text-button {
+  margin-top: 20px;
+}
+.dashboard-top {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-block: 28px;
+}
+.dashboard-top p {
+  overflow-wrap: anywhere;
+}
+.dashboard-top .text-button {
+  margin: 0;
+}
+.creator-form .checkbox-label {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  line-height: 1.6;
+}
+.checkbox-label input {
+  width: auto;
+  margin-top: 4px;
+}
+.workspace-works {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px;
+}
+.workspace-works .draft-card {
+  min-width: 0;
+}
+.workspace-works .draft-card .art-image {
+  height: 220px;
+  width: 100%;
+  object-fit: contain;
+  background: #f3e6db;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+@media (max-width: 800px) {
+  .workspace-works {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 540px) {
+  .workspace-works {
+    grid-template-columns: 1fr;
+  }
+  .account-box {
+    padding: 20px;
+  }
+}
+.artist-cover-placeholder {
+  aspect-ratio: 1.15;
+  display: grid;
+  place-items: center;
+  background: #eee1f6;
+  color: var(--violet);
+  font-family: Georgia, serif;
+  font-size: 100px;
+}

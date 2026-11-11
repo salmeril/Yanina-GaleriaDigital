@@ -1,59 +1,37 @@
-# Galería colectiva · Adelanto 03
+# Galería colectiva · Cuentas y obras permanentes
 
-Proyecto React + Vite preparado para VS Code y Netlify. El nombre Galería colectiva es provisional. La plataforma contempla múltiples artistas y compositores, catálogo físico y digital y espacios individuales. Yanina tiene una presentación propia dentro de la plataforma.
+React + Vite para trabajar en VS Code y publicar desde GitHub en Netlify.
 
-## Abrir en VS Code
+Esta versión integra Supabase para registro por correo, acceso, recuperación de contraseña, perfiles y obras persistentes. Cada artista administra su propia sala. El catálogo público muestra los trabajos publicados por perfiles visibles.
 
-Con Node.js 24 instalado, abrí esta carpeta y ejecutá en la terminal.
+## Empezar
+
+Usá Node.js 24 y ejecutá en esta carpeta.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Abrí la dirección que muestra la terminal. Para compilar, ejecutá `npm run build`. El resultado queda en `dist`.
+Para compilar, ejecutá `npm run build`. La salida se genera en `dist`.
 
-## Mostrar en Netlify
+Leé **CONECTAR-CUENTAS.md** para configurar Supabase y Netlify. El esquema y los permisos están en `supabase/schema.sql`. Las variables de ejemplo están en `.env.example`.
 
-El ZIP incluye una carpeta `publicar-netlify` con la compilación lista. Para una publicación manual, arrastrá esa carpeta a la pantalla de deploy manual de Netlify. Para actualizar un sitio existente, usá su área de despliegue manual.
+Sin las dos variables de conexión la web muestra el catálogo ficticio y el acceso informa que se está preparando. Con ambas variables, carga perfiles y obras desde Supabase. La cuenta nueva empieza con un perfil privado y un catálogo vacío.
 
-Para despliegue desde GitHub, copiá el contenido de `galeria-yanina` a la raíz de tu repositorio. Incluí `.gitignore`, package-lock.json y netlify.toml. Configurá ese repositorio en Netlify. El archivo netlify.toml declara el comando `npm run build`, la carpeta `dist` y Node.js 24. Si guardás el proyecto dentro de una subcarpeta del repositorio, configurá esa subcarpeta como base en Netlify.
+## Archivos de trabajo
 
-La navegación utiliza rutas con hash y funciona en alojamiento estático.
+- `src/main.jsx` contiene la galería pública y la selección de demostración.
+- `src/Workspace.jsx` contiene las cuentas y el panel de artistas.
+- `src/backend.js` integra autenticación, datos y archivos.
+- `src/data.js` contiene las obras ficticias para el modo de muestra y las etiquetas de formato.
+- `src/styles.css` contiene el diseño y la paleta adaptada de las piezas de Yanina.
+- `netlify.toml` contiene el comando de compilación y la salida para Netlify.
 
-## Qué se puede probar
+## Identidad y alcance
 
-- Inicio de galería colectiva y perfiles de tres creadores ficticios.
-- Catálogo con filtros para obras físicas, arte digital y música.
-- Ficha ampliada con precio, detalles, autor y modalidad de entrega.
-- Reproductor de un audio sintético de demostración, generado para este adelanto.
-- Selección de una unidad por obra, eliminación y subtotal en ARS.
-- Revisión del pedido de ejemplo, con envío físico pendiente de cotizar y entrega digital pendiente de habilitar.
-- Panel sin autenticación para crear borradores con portada y mostrarlos en el catálogo de esa pestaña.
+El nombre Galería colectiva es provisional. El sello circular se muestra desde una referencia anterior de Yanina en `public/marca/referencia-yanina.png`. Queda pendiente reemplazarlo por el archivo original del logo. Los colores se adaptaron visualmente de esas referencias.
 
-Las cargas y la selección viven solo en memoria y se pierden al recargar o cerrar la página. Cada visitante de Netlify prueba su propia sesión. Nada se envía a otros visitantes ni a un servidor. Los borradores no contienen archivos vendidos, solo una portada opcional. No hay pagos, pedidos, reservas, usuarios ni envío de correos reales.
+Los registros nuevos se publican por decisión del propio artista. La revisión por Yanina y un rol administrativo quedan para otra etapa. El carrito, los pagos, los envíos y la entrega de archivos vendidos todavía están en desarrollo.
 
-## Material y datos
-
-Los perfiles, precios, obras, licencias y condiciones son ficticios. Reemplazalos en `src/data.js`. Las composiciones visuales están hechas con CSS, no representan obras reales. Para usar fotos, guardalas en `public/obras` y completá image y alt en los datos. Los textos de presentación deben validarse con Yanina. La tipografía se carga desde Google Fonts con alternativas locales.
-
-## Funciones necesarias para vender
-
-1. Autenticación y recuperación de cuentas de artistas, compradores y administración.
-2. Base de datos y autorización en servidor para que cada artista edite únicamente sus obras. Definir aprobación editorial con Yanina.
-3. Almacenamiento de portadas, audio de muestra y archivos digitales privados. Validación de archivos en servidor.
-4. Gestión de obras únicas, ediciones, disponibilidad, borradores y publicación.
-5. Precios y pedidos verificados en servidor. El navegador no debe definir el importe a cobrar.
-6. Integración del medio de pago elegido y validación de sus notificaciones en servidor. Confirmación idempotente para evitar pedidos duplicados.
-7. Reserva y liberación de originales físicos para evitar ventas simultáneas de una misma pieza.
-8. Entrega digital autorizada después del pago, con accesos privados y condiciones de uso de cada autor.
-9. Cotización por origen, destino, peso y embalaje. Definir retiro, transportista, seguimiento y responsabilidad sobre cada envío.
-10. Definir quién cobra, las comisiones de la plataforma, la liquidación a los artistas y la política de cancelaciones y devoluciones.
-
-El adelanto sirve para revisar estos recorridos. Las integraciones comerciales requieren definir el modelo de cobro y crear o conectar los servicios correspondientes.
-
-## Identidad de Yanina
-
-Encabezado y pie incorporan el sello circular naranja que aparece en las piezas anteriores de Yanina. Como no se encontró un archivo aislado del logo, se utiliza una ventana circular CSS sobre la referencia existente `public/marca/referencia-yanina.png`. La referencia se conserva sin modificaciones. Para una versión final más liviana conviene sustituir esta referencia por el archivo original del logo y simplificar el componente Brand.
-
-La paleta digital se adaptó visualmente de las referencias existentes, sin un manual con códigos oficiales. Naranja #f25418, violeta #6b308c, turquesa #008ca7, amarillo #ffcf47 y crema #fff7e8. El favicon es una inicial Y sobre círculo naranja como adaptación para tamaño pequeño.
+El archivo CONECTAR-CUENTAS.md detalla las verificaciones realizadas y las pruebas pendientes contra el servicio real.
