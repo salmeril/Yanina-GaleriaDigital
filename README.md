@@ -1,8 +1,10 @@
-# Galería colectiva · Cuentas y obras permanentes
+# Galería colectiva · Usuarios v0.2.0
 
 React + Vite para trabajar en VS Code. La publicación final está prevista en DonWeb, con Netlify como adelanto de revisión.
 
 Esta versión integra Supabase para registro por correo, acceso, recuperación de contraseña, perfiles y obras persistentes. Cada artista administra su propia sala. El catálogo público muestra los trabajos publicados por perfiles visibles.
+
+Leé **ACTUALIZAR-USUARIOS.md** para instalar esta actualización conservando tu `.env.local`.
 
 ## Empezar
 
@@ -17,12 +19,14 @@ Para compilar, ejecutá `npm run build`. La salida se genera en `dist`.
 
 Leé **PUBLICAR-DONWEB.md** para la publicación final y **CONECTAR-CUENTAS.md** para activar Supabase. El esquema y los permisos están en `supabase/schema.sql`. Las variables de ejemplo están en `.env.example`.
 
-Sin las dos variables de conexión la web muestra el catálogo ficticio y el acceso informa que se está preparando. Con ambas variables, carga perfiles y obras desde Supabase. La cuenta nueva empieza con un perfil privado y un catálogo vacío.
+El menú muestra Ingresar y Crear cuenta. Sin las dos variables de conexión la web muestra el catálogo ficticio y los formularios de acceso visibles, con un aviso y los envíos deshabilitados. No se crean cuentas de muestra ni se guardan contraseñas localmente. Con ambas variables, carga perfiles y obras desde Supabase. La cuenta nueva empieza con un perfil privado y un catálogo vacío.
 
 ## Archivos de trabajo
 
 - `src/main.jsx` contiene la galería pública y la selección de demostración.
-- `src/Workspace.jsx` contiene las cuentas y el panel de artistas.
+- `src/AccessForm.jsx` contiene ingreso, registro, recuperación y reenvío de confirmación.
+- `src/accounts.css` contiene los estilos de acceso.
+- `src/Workspace.jsx` contiene la sesión y los paneles de artistas y administración.
 - `src/AdminDashboard.jsx` contiene habilitación de participantes y revisión de obras.
 - `src/PriceEstimator.jsx` y `src/pricing.js` contienen el orientador de precio por costos.
 - `src/backend.js` integra autenticación, datos y archivos.

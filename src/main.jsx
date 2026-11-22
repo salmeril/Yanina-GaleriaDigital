@@ -11,6 +11,8 @@ import "./design.css";
 import "./atmosphere.css";
 import { backend, loadCatalog, friendlyError } from "./backend";
 import Workspace, { useAccount } from "./Workspace";
+import { accessRoutes } from "./AccessForm";
+import "./accounts.css";
 
 function ArtworkImage({ artwork, className = "" }) {
   if (artwork.image)
@@ -130,7 +132,7 @@ function App() {
       "/mi-espacio",
       "/admin",
       "/pedido",
-    ].includes(route) || artist;
+    ].includes(route) || route in accessRoutes || artist;
   const published = artworks.filter((work) => work.status !== "borrador");
   const cartWorks = cart
     .map((id) => artworks.find((work) => work.id === id))
@@ -301,9 +303,14 @@ function App() {
           >
             Selección ({cart.length})
           </a>
-          <a className="access-link" href="#/mi-espacio">
-            Mi espacio <span className="arrow-icon" aria-hidden="true" />
-          </a>
+          {account.session ? (
+            <a className="access-link" href="#/mi-espacio">Mi espacio</a>
+          ) : (
+            <span className="header-account">
+              <a href="#/ingresar">Ingresar</a>
+              <a className="access-link" href="#/registro">Crear cuenta</a>
+            </span>
+          )}
         </nav>
       </header>
       <div className="status-notice wrap" role="status">
@@ -625,11 +632,13 @@ function App() {
             </a>
           </section>
         )}
-        {["/mi-espacio", "/admin"].includes(route) && (
+        {(["/mi-espacio", "/admin"].includes(route) || route in accessRoutes) && (
           <Workspace
             account={account}
             onCatalogChange={refreshCatalog}
             adminOnly={route === "/admin"}
+            accessMode={accessRoutes[route] || "login"}
+            isAccessRoute={route in accessRoutes}
           />
         )}
         {route === "/pedido" && (

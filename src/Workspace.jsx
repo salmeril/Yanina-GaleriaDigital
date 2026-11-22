@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   backend,
   recoveryLink,
-  authRedirect,
   loadWorkspace,
   saveProfile,
   saveWork,
@@ -12,6 +11,7 @@ import {
 import { workTypes, formatPrice } from "./data";
 import AdminDashboard from "./AdminDashboard";
 import PriceEstimator from "./PriceEstimator";
+import AccessForm from "./AccessForm";
 
 export function useAccount() {
   const [session, setSession] = useState(null);
@@ -94,184 +94,22 @@ export function useAccount() {
   };
 }
 
-function AccessForm({ mode, onMode, onPasswordSaved }) {
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  async function submit(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const values = new FormData(form);
-    const email = String(values.get("email") || "").trim();
-    const password = String(values.get("password") || "");
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      let result;
-      if (mode === "signup") {
-        const name = String(values.get("name")).trim();
-        if (!name) throw new Error("Completá tu nombre artístico.");
-        result = await backend.auth.signUp({
-          email,
-          password,
-          options: { data: { name }, emailRedirectTo: authRedirect() },
-        });
-        if (result.error) throw result.error;
-        if (!result.data.session)
-          setMessage(
-            "Si el registro se puede completar, recibirás un correo para confirmar tu cuenta. Revisá también el spam.",
-          );
-      } else if (mode === "reset") {
-        result = await backend.auth.resetPasswordForEmail(email, {
-          redirectTo: authRedirect(),
-        });
-        if (result.error) throw result.error;
-        setMessage(
-          "Si hay una cuenta asociada, recibirás un enlace para cambiar tu contraseña.",
-        );
-      } else if (mode === "password") {
-        if (password !== values.get("confirmation"))
-          throw new Error("Las contraseñas no coinciden.");
-        result = await backend.auth.updateUser({ password });
-        if (result.error) throw result.error;
-        onPasswordSaved();
-      } else {
-        result = await backend.auth.signInWithPassword({ email, password });
-        if (result.error) throw result.error;
-      }
-      form.reset();
-    } catch (failure) {
-      setError(friendlyError(failure));
-    } finally {
-      setBusy(false);
-    }
-  }
-  const titles = {
-    login: "Entrá a tu espacio.",
-    signup: "Creá tu cuenta.",
-    reset: "Recuperá tu acceso.",
-    password: "Elegí una nueva contraseña.",
-  };
-  return (
-    <div className="account-box">
-      <h2>{titles[mode]}</h2>
-      <form className="creator-form" onSubmit={submit}>
-        {mode === "signup" && (
-          <label>
-            Nombre artístico
-            <input name="name" autoComplete="name" required maxLength="100" />
-          </label>
-        )}
-        {mode !== "password" && (
-          <label>
-            Correo electrónico
-            <input
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              maxLength="254"
-            />
-          </label>
-        )}
-        {mode !== "reset" && (
-          <label>
-            Contraseña
-            <input
-              name="password"
-              type="password"
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
-              required
-              minLength={mode === "login" ? 1 : 10}
-              maxLength="128"
-            />
-            <small>{mode !== "login" && "Usá al menos 10 caracteres."}</small>
-          </label>
-        )}
-        {mode === "password" && (
-          <label>
-            Repetí la contraseña
-            <input
-              name="confirmation"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength="10"
-              maxLength="128"
-            />
-          </label>
-        )}
-        {mode === "signup" && (
-          <p className="delivery-note">
-            Tu perfil empieza privado. Podrás elegir qué obras publicar. Usá un
-            correo que puedas confirmar.
-          </p>
-        )}
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-        <p role="status">{message}</p>
-        <button className="button" disabled={busy}>
-          {busy
-            ? "Procesando…"
-            : {
-                login: "Ingresar",
-                signup: "Crear cuenta",
-                reset: "Enviar enlace",
-                password: "Guardar contraseña",
-              }[mode]}
-        </button>
-      </form>
-      {mode !== "password" && (
-        <div className="account-actions">
-          <button
-            className="text-button"
-            onClick={() => onMode(mode === "signup" ? "login" : "signup")}
-          >
-            {mode === "signup" ? "Ya tengo una cuenta" : "Crear una cuenta"}
-          </button>
-          <button
-            className="text-button"
-            onClick={() => onMode(mode === "reset" ? "login" : "reset")}
-          >
-            {mode === "reset" ? "Volver a ingresar" : "Olvidé mi contraseña"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Workspace({
   account,
   onCatalogChange,
   adminOnly = false,
+  accessMode = "login",
+  isAccessRoute = false,
 }) {
-  const [mode, setMode] = useState("login");
   const [passwordChange, setPasswordChange] = useState(false);
+  useEffect(() => {
+    if (account.session && !account.recovery && isAccessRoute)
+      location.hash = "/mi-espacio";
+  }, [account.session, account.recovery, isAccessRoute]);
   if (account.loading)
     return (
       <section className="section wrap" role="status">
         Comprobando tu sesión…
-      </section>
-    );
-  if (!backend)
-    return (
-      <section className="section wrap">
-        <p className="eyebrow">Mi espacio</p>
-        <h1 className="page-title">
-          Tu próxima <em>sala.</em>
-        </h1>
-        <p className="lead">
-          El acceso de artistas se está preparando. Pronto podrás crear tu
-          perfil y guardar tus obras.
-        </p>
-        <a className="button" href="#/galeria">
-          Recorré la galería
-        </a>
       </section>
     );
   if (account.error)
@@ -287,16 +125,20 @@ export default function Workspace({
     );
   if (!account.session)
     return (
-      <section className="section wrap">
-        <p className="eyebrow">Artistas y compositores</p>
-        <h1 className="page-title">
-          Tu propio <em>espacio.</em>
-        </h1>
-        <p className="lead">
-          Guardá tu perfil, reuní tus creaciones y elegí cuáles compartir en la
-          galería.
-        </p>
-        <AccessForm key={mode} mode={mode} onMode={setMode} />
+      <section className="section wrap auth-layout">
+        <div className="auth-intro">
+          <p className="eyebrow">Artistas y compositores</p>
+          <h1 className="page-title">Un lugar para<br /><em>lo que creás.</em></h1>
+          <p className="lead">Tu perfil, tus obras y nuevas personas para descubrirlas.</p>
+          <ul className="auth-benefits">
+            <li>Presentá tu recorrido y tu identidad artística.</li>
+            <li>Reuní tus obras físicas, digitales y composiciones.</li>
+            <li>Prepará tus publicaciones y seguí su revisión.</li>
+          </ul>
+          <p className="auth-private">Tu cuenta empieza con un perfil privado. La publicación de obras requiere revisión de la galería.</p>
+          <a className="text-link" href="#/galeria">Seguir explorando las obras</a>
+        </div>
+        <AccessForm key={accessMode} mode={accessMode} />
       </section>
     );
   if (account.recovery || passwordChange)

@@ -88,7 +88,7 @@ Las variables `VITE_` se incorporan durante la compilación. Agregarlas después
 
 ## 6. Probar el recorrido completo
 
-1. Entrá a Mi espacio y creá una cuenta con tu correo.
+1. Entrá a Crear cuenta en el menú y registrate con tu correo. Ingresar abre la pantalla de acceso; Mi espacio aparece después de iniciar sesión.
 2. Confirmá el correo y entrá al panel.
 3. Guardá el nombre artístico, la disciplina y la presentación. Activá el perfil público cuando quieras aparecer en el directorio.
 4. Cargá una obra con portada y descripción visual. Para música podés agregar un audio de muestra.

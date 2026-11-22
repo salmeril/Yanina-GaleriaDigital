@@ -227,6 +227,16 @@ export async function setWorkStatus(work, status) {
 }
 
 export function friendlyError(error) {
+  if (error?.code === "email_address_not_authorized" || error?.message?.includes("Email address not authorized"))
+    return "El envío de correos todavía está limitado a las cuentas del equipo de prueba. Contactá a la galería para habilitar tu registro.";
+  if (error?.code === "over_email_send_rate_limit" || error?.code === "over_request_rate_limit")
+    return "Se alcanzó el límite de intentos o correos. Esperá antes de volver a probar.";
+  if (error?.code === "weak_password")
+    return "Elegí una contraseña más segura, con letras, números y símbolos.";
+  if (error?.code === "signup_disabled")
+    return "El registro de nuevas cuentas está pausado. Contactá a la galería.";
+  if (error?.message === "Failed to fetch" || error?.message === "fetch failed")
+    return "No pudimos conectarnos al servicio de cuentas. Revisá tu conexión y volvé a intentar.";
   if (error?.code === "23505")
     return "Este registro ya se guardó. Actualizá el panel para verlo.";
   if (error?.code === "42501")
