@@ -1,4 +1,4 @@
-# Galería colectiva · Usuarios v0.2.0
+# Galería colectiva · Usuarios v0.2.1
 
 React + Vite para trabajar en VS Code. La publicación final está prevista en DonWeb, con Netlify como adelanto de revisión.
 
@@ -19,7 +19,7 @@ Para compilar, ejecutá `npm run build`. La salida se genera en `dist`.
 
 Leé **PUBLICAR-DONWEB.md** para la publicación final y **CONECTAR-CUENTAS.md** para activar Supabase. El esquema y los permisos están en `supabase/schema.sql`. Las variables de ejemplo están en `.env.example`.
 
-El menú muestra Ingresar y Crear cuenta. Sin las dos variables de conexión la web muestra el catálogo ficticio y los formularios de acceso visibles, con un aviso y los envíos deshabilitados. No se crean cuentas de muestra ni se guardan contraseñas localmente. Con ambas variables, carga perfiles y obras desde Supabase. La cuenta nueva empieza con un perfil privado y un catálogo vacío.
+El menú muestra Ingresar y Crear cuenta. Sin las dos variables de conexión la web muestra el catálogo ficticio y los formularios de acceso visibles, con un aviso y el botón de envío deshabilitado. Los campos permiten escribir. No se crean cuentas de muestra ni se guardan contraseñas localmente. Con ambas variables, carga perfiles y obras desde Supabase. La cuenta nueva empieza con un perfil privado y un catálogo vacío.
 
 ## Archivos de trabajo
 

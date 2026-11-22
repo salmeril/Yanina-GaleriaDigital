@@ -1,4 +1,4 @@
-# Usuarios · versión 0.2.0
+# Usuarios · versión 0.2.1
 
 Esta entrega hace visible el acceso desde el menú y separa las pantallas de usuarios. Mantiene la paleta, la bruma y las herramientas de artistas y administración.
 
@@ -36,7 +36,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=TU-CLAVE-PUBLICABLE
 
 Reemplazá los ejemplos por la Project URL y la Publishable key de tu proyecto. No uses Secret ni service_role. Reiniciá Vite después de cualquier cambio de variables.
 
-Sin conexión configurada, las pantallas se pueden recorrer pero los formularios quedan deshabilitados y muestran un aviso. No simulan registro ni acceso. En desarrollo, el aviso también permite desplegar ayuda para configurar las variables.
+Sin conexión configurada, las pantallas se pueden recorrer pero los campos permiten escribir y solo el botón de envío queda deshabilitado con el texto Conexión pendiente. Un aviso explica el estado. No simulan registro ni acceso. En desarrollo, el aviso también permite desplegar ayuda para configurar las variables.
 
 Para probar por primera vez con el correo predeterminado de Supabase, usá el email del equipo del proyecto. Para recibir confirmaciones y recuperaciones en cuentas de artistas externos, primero configurá SMTP propio. Mantené la confirmación de correo activada.
 

@@ -104,7 +104,7 @@ export default function AccessForm({ mode = "login", onPasswordSaved }) {
         </div>
       )}
       <form className="creator-form" aria-labelledby="access-title" aria-busy={busy} aria-describedby={unavailable ? "access-unavailable" : undefined} onSubmit={submit}>
-        <fieldset className="auth-fields" disabled={busy || unavailable}>
+        <fieldset className="auth-fields" disabled={busy}>
           <legend className="sr-only">Datos de acceso</legend>
           {mode === "signup" && (
             <label>Nombre artístico<input name="name" autoComplete="nickname" required maxLength="100" placeholder="Cómo querés presentarte" /></label>
@@ -130,7 +130,7 @@ export default function AccessForm({ mode = "login", onPasswordSaved }) {
         {error && <p className="form-error" role="alert">{error}</p>}
         {needsConfirmation && <a className="text-link" href="#/reenviar-confirmacion">Pedir un nuevo correo de confirmación</a>}
         <p className="auth-message" role="status">{message}</p>
-        <button className="button auth-submit" disabled={busy || unavailable}>{busy ? "Procesando…" : action}</button>
+        <button className="button auth-submit" disabled={busy || unavailable}>{unavailable ? "Conexión pendiente" : busy ? "Procesando…" : action}</button>
       </form>
       {mode !== "password" && (
         <div className="account-actions auth-links">
