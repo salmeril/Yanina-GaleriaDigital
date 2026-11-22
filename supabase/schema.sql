@@ -154,4 +154,234 @@ revoke all on function public.gallery_check_preview() from public;
 drop trigger if exists gallery_work_preview on public.gallery_works;
 create trigger gallery_work_preview before insert or update on public.gallery_works
 for each row execute function public.gallery_check_preview();
+-- Roles, habilitación de participantes y revisión editorial.
+create table if not exists public.gallery_admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.gallery_memberships (
+  artist_id uuid primary key references public.gallery_profiles(id) on delete cascade,
+  status text not null default 'pendiente' check (status in ('pendiente','habilitada','suspendida')),
+  -- Reservado para planes comerciales futuros. No otorga acceso por sí mismo.
+  plan_code text not null default 'por_definir' check (plan_code ~ '^[a-z0-9_-]{1,48}$'),
+  valid_until timestamptz,
+  version integer not null default 1,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.gallery_reviews (
+  id bigint generated always as identity primary key,
+  work_id uuid not null references public.gallery_works(id) on delete cascade,
+  reviewer_id uuid not null references auth.users(id),
+  decision text not null check (decision in ('publicada','cambios')),
+  note text not null default '' check (char_length(note) <= 1500),
+  created_at timestamptz not null default now()
+);
+create index if not exists gallery_reviews_work_idx on public.gallery_reviews(work_id, id desc);
+
+alter table public.gallery_works drop constraint if exists gallery_works_status_check;
+alter table public.gallery_works add constraint gallery_works_status_check
+  check (status in ('borrador','revision','cambios','publicada'));
+insert into public.gallery_memberships(artist_id)
+select id from public.gallery_profiles on conflict(artist_id) do nothing;
+drop trigger if exists gallery_membership_version on public.gallery_memberships;
+create trigger gallery_membership_version before update on public.gallery_memberships
+for each row execute function public.gallery_bump_version();
+
+create or replace function public.gallery_new_user()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.gallery_profiles(id, name)
+  values (new.id, coalesce(nullif(left(btrim(new.raw_user_meta_data->>'name'),100),''), 'Artista'))
+  on conflict(id) do nothing;
+  insert into public.gallery_memberships(artist_id) values(new.id)
+  on conflict(artist_id) do nothing;
+  return new;
+end;
+$$;
+revoke all on function public.gallery_new_user() from public, anon, authenticated;
+
+create or replace function public.gallery_is_admin()
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.gallery_admins where user_id = (select auth.uid()));
+$$;
+revoke all on function public.gallery_is_admin() from public, anon, authenticated;
+grant execute on function public.gallery_is_admin() to anon, authenticated;
+
+create or replace function public.gallery_artist_enabled(artist uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.gallery_memberships
+    where artist_id = artist and status = 'habilitada'
+    and (valid_until is null or valid_until > now()));
+$$;
+revoke all on function public.gallery_artist_enabled(uuid) from public, anon, authenticated;
+grant execute on function public.gallery_artist_enabled(uuid) to anon, authenticated;
+
+alter table public.gallery_admins enable row level security;
+alter table public.gallery_memberships enable row level security;
+alter table public.gallery_reviews enable row level security;
+revoke all on public.gallery_admins, public.gallery_memberships, public.gallery_reviews from anon, authenticated;
+grant select on public.gallery_admins, public.gallery_memberships, public.gallery_reviews to authenticated;
+drop policy if exists gallery_admin_self on public.gallery_admins;
+create policy gallery_admin_self on public.gallery_admins for select to authenticated
+using(user_id = (select auth.uid()));
+drop policy if exists gallery_membership_read on public.gallery_memberships;
+create policy gallery_membership_read on public.gallery_memberships for select to authenticated
+using(artist_id = (select auth.uid()) or (select public.gallery_is_admin()));
+drop policy if exists gallery_review_read on public.gallery_reviews;
+create policy gallery_review_read on public.gallery_reviews for select to authenticated
+using((select public.gallery_is_admin()) or exists(
+  select 1 from public.gallery_works w where w.id = work_id and w.artist_id = (select auth.uid())
+));
+
+-- Las observaciones editoriales se guardan en una tabla privada, fuera del catálogo.
+drop policy if exists gallery_profile_read on public.gallery_profiles;
+create policy gallery_profile_read on public.gallery_profiles for select to anon, authenticated
+using((is_public and public.gallery_artist_enabled(id)) or id = (select auth.uid()) or (select public.gallery_is_admin()));
+drop policy if exists gallery_work_read on public.gallery_works;
+create policy gallery_work_read on public.gallery_works for select to anon, authenticated
+using(artist_id = (select auth.uid()) or (select public.gallery_is_admin()) or (
+  status = 'publicada' and public.gallery_artist_enabled(artist_id) and exists(
+    select 1 from public.gallery_profiles p where p.id = artist_id and p.is_public
+  )
+));
+drop policy if exists gallery_work_insert on public.gallery_works;
+create policy gallery_work_insert on public.gallery_works for insert to authenticated
+with check(artist_id = (select auth.uid()) and status = 'borrador');
+drop policy if exists gallery_work_update on public.gallery_works;
+create policy gallery_work_update on public.gallery_works for update to authenticated
+using(artist_id = (select auth.uid()))
+with check(artist_id = (select auth.uid()));
+
+create or replace function public.gallery_guard_editorial()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  -- Los clientes solo guardan borradores y envían a revisión.
+  -- La aprobación se ejecuta desde una función privilegiada que comprueba el rol.
+  if current_user = 'authenticated' then
+    if tg_op = 'INSERT' and new.status <> 'borrador' then
+      raise exception 'La obra debe empezar en borrador.' using errcode = '42501';
+    end if;
+    if tg_op = 'UPDATE' then
+      if (new.title,new.type,new.medium,new.details,new.price,new.cover_path,new.audio_path,new.alt)
+        is distinct from (old.title,old.type,old.medium,old.details,old.price,old.cover_path,old.audio_path,old.alt) then
+        new.status := 'borrador';
+      elsif new.status in ('publicada','cambios') and new.status is distinct from old.status then
+        raise exception 'La aprobación corresponde a la administración.' using errcode = '42501';
+      end if;
+    end if;
+  end if;
+  if new.status in ('revision','publicada') then
+    if not public.gallery_artist_enabled(new.artist_id) then
+      raise exception 'La participación debe estar habilitada para enviar o publicar obras.' using errcode = '42501';
+    end if;
+    if not exists(select 1 from public.gallery_profiles where id = new.artist_id and is_public) then
+      raise exception 'Activá tu perfil público antes de enviar una obra.' using errcode = '42501';
+    end if;
+    if new.cover_path is null then
+      raise exception 'Agregá una portada antes de enviar la obra.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.gallery_guard_editorial() from public, anon, authenticated;
+drop trigger if exists gallery_work_editorial on public.gallery_works;
+create trigger gallery_work_editorial before insert or update on public.gallery_works
+for each row execute function public.gallery_guard_editorial();
+
+-- La misma validación de archivos se aplica al envío a revisión.
+create or replace function public.gallery_check_preview()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.status in ('revision','publicada') then
+    if not exists(select 1 from storage.objects where bucket_id = 'gallery-previews' and name = new.cover_path) then
+      raise exception 'La portada todavía no está disponible.';
+    end if;
+    if new.audio_path is not null and not exists(
+      select 1 from storage.objects where bucket_id = 'gallery-previews' and name = new.audio_path
+    ) then raise exception 'El audio todavía no está disponible.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.gallery_check_preview() from public, anon, authenticated;
+
+drop policy if exists gallery_preview_insert on storage.objects;
+create policy gallery_preview_insert on storage.objects for insert to authenticated
+with check(bucket_id = 'gallery-previews' and (storage.foldername(name))[1] = (select auth.uid()::text)
+  and exists(select 1 from public.gallery_memberships where artist_id = (select auth.uid()) and status <> 'suspendida'));
+drop policy if exists gallery_preview_read on storage.objects;
+create policy gallery_preview_read on storage.objects for select to anon, authenticated
+using(bucket_id = 'gallery-previews' and (
+  (storage.foldername(name))[1] = (select auth.uid()::text)
+  or exists(select 1 from public.gallery_works w where (w.cover_path = storage.objects.name or w.audio_path = storage.objects.name)
+    and ((select public.gallery_is_admin()) or (w.status = 'publicada' and public.gallery_artist_enabled(w.artist_id)
+      and exists(select 1 from public.gallery_profiles p where p.id = w.artist_id and p.is_public))))
+));
+
+create or replace function public.gallery_review_work(p_work_id uuid, p_version integer, p_decision text, p_note text default '')
+returns public.gallery_works language plpgsql security definer set search_path = '' as $$
+declare
+  work public.gallery_works;
+begin
+  if not public.gallery_is_admin() then
+    raise exception 'Acceso exclusivo de administración.' using errcode = '42501';
+  end if;
+  if p_decision is null or p_decision not in ('publicada','cambios') then
+    raise exception 'Decisión inválida.';
+  end if;
+  if p_note is null or char_length(p_note) > 1500 or (p_decision = 'cambios' and char_length(btrim(p_note)) = 0) then
+    raise exception 'Indicá una observación de hasta 1500 caracteres para devolver la obra.';
+  end if;
+  select * into work from public.gallery_works where id = p_work_id for update;
+  if not found or work.version is distinct from p_version then
+    raise exception 'La obra cambió. Actualizá el panel antes de decidir.';
+  end if;
+  if (p_decision = 'publicada' and work.status <> 'revision')
+    or (p_decision = 'cambios' and work.status not in ('revision','publicada')) then
+    raise exception 'Esta obra ya no está disponible para esa revisión.';
+  end if;
+  -- Serializar habilitación y publicación sobre la misma participación.
+  perform 1 from public.gallery_memberships where artist_id = work.artist_id for update;
+  update public.gallery_works set status = p_decision where id = p_work_id returning * into work;
+  insert into public.gallery_reviews(work_id,reviewer_id,decision,note)
+    values(p_work_id,auth.uid(),p_decision,btrim(p_note));
+  return work;
+end;
+$$;
+revoke all on function public.gallery_review_work(uuid,integer,text,text) from public, anon, authenticated;
+grant execute on function public.gallery_review_work(uuid,integer,text,text) to authenticated;
+
+create or replace function public.gallery_set_membership(p_artist_id uuid, p_version integer, p_status text)
+returns public.gallery_memberships language plpgsql security definer set search_path = '' as $$
+declare
+  membership public.gallery_memberships;
+begin
+  if not public.gallery_is_admin() then
+    raise exception 'Acceso exclusivo de administración.' using errcode = '42501';
+  end if;
+  if p_status is null or p_status not in ('pendiente','habilitada','suspendida') then
+    raise exception 'Estado de participación inválido.';
+  end if;
+  update public.gallery_memberships set status = p_status
+    where artist_id = p_artist_id and version = p_version returning * into membership;
+  if not found then raise exception 'La participación cambió. Actualizá el panel.'; end if;
+  return membership;
+end;
+$$;
+revoke all on function public.gallery_set_membership(uuid,integer,text) from public, anon, authenticated;
+grant execute on function public.gallery_set_membership(uuid,integer,text) to authenticated;
+
+
+-- Vistas explícitas para que la portada pública muestre el mismo catálogo
+-- incluso cuando quien navega es un administrador.
+create or replace view public.gallery_public_profiles with (security_invoker = true) as
+select id,name,discipline,bio,created_at from public.gallery_profiles
+where is_public and public.gallery_artist_enabled(id);
+create or replace view public.gallery_public_works with (security_invoker = true) as
+select w.* from public.gallery_works w join public.gallery_profiles p on p.id = w.artist_id
+where w.status = 'publicada' and p.is_public and public.gallery_artist_enabled(w.artist_id);
+grant select on public.gallery_public_profiles, public.gallery_public_works to anon, authenticated;
+
 commit;

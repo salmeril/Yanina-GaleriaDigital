@@ -1,0 +1,328 @@
+/* Referencias de paleta aportadas por Lucas.
+   Celeste, índigo, ciruela y magenta de las muestras de la primera imagen.
+   Violeta, rosa, cobre y dorado de los códigos impresos en la segunda. */
+:root {
+  --ink: #1b355a;
+  --paper: #f8f6fc;
+  --muted: #65536f;
+  --line: #ddd3e6;
+  --accent-soft: #ecdfef;
+  --violet: #5b316c;
+  --orange: #d87421;
+  --turquoise: #1b355a;
+  --yellow: #fab522;
+  --sky: #89bcf1;
+  --indigo: #14015a;
+  --plum: #510047;
+  --magenta: #b1016d;
+  --rose: #a03a55;
+  background: var(--paper);
+  color: var(--ink);
+}
+body {
+  isolation: isolate;
+}
+
+/* Fondo general tenue y fijo. No captura clics ni modifica el flujo del sitio. */
+.color-mist {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+}
+.color-mist > span {
+  position: absolute;
+  width: min(65vw, 700px);
+  height: min(65vw, 700px);
+  min-width: 300px;
+  min-height: 300px;
+  border-radius: 45% 55% 65% 35%;
+  filter: blur(46px);
+  opacity: 0.13;
+  animation: color-drift 26s ease-in-out infinite alternate;
+}
+.mist-magenta {
+  top: 15%;
+  left: -18%;
+  background: radial-gradient(
+    ellipse,
+    #b1016d 0%,
+    #a03a5570 45%,
+    transparent 72%
+  );
+}
+.color-mist .mist-blue {
+  top: -8%;
+  right: -12%;
+  background: radial-gradient(
+    ellipse,
+    #89bcf1 0%,
+    #5b316c70 44%,
+    transparent 72%
+  );
+  opacity: 0.24;
+  animation-delay: -11s;
+  animation-duration: 31s;
+}
+.color-mist .mist-gold {
+  left: 38%;
+  bottom: -30%;
+  background: radial-gradient(
+    ellipse,
+    #fab522 0%,
+    #d8742170 42%,
+    transparent 72%
+  );
+  animation-delay: -19s;
+  animation-duration: 35s;
+}
+
+/* Bruma más intensa dentro de la portada. Los textos quedan en otra capa. */
+.hero {
+  background: #260c42;
+}
+.color-mist-hero {
+  position: absolute;
+  z-index: 0;
+}
+.color-mist-hero > span {
+  width: 72%;
+  height: 100%;
+  max-width: 850px;
+  max-height: 850px;
+  opacity: 0.78;
+  filter: blur(38px);
+}
+.color-mist-hero .mist-magenta {
+  top: -22%;
+  left: 10%;
+  background: radial-gradient(
+    ellipse,
+    #b1016de6 0%,
+    #510047aa 46%,
+    transparent 72%
+  );
+}
+.color-mist-hero .mist-blue {
+  top: -10%;
+  right: -18%;
+  opacity: 0.68;
+  background: radial-gradient(
+    ellipse,
+    #89bcf1b3 0%,
+    #5b316cc7 45%,
+    transparent 73%
+  );
+}
+.color-mist-hero .mist-gold {
+  bottom: -50%;
+  left: 5%;
+  opacity: 0.58;
+  background: radial-gradient(
+    ellipse,
+    #fab522c7 0%,
+    #d87421a8 40%,
+    transparent 72%
+  );
+}
+.hero::before {
+  display: none;
+}
+.hero::after {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: inherit;
+  z-index: 0;
+  background: linear-gradient(90deg, #14015a99, #14015a40 58%, transparent);
+}
+.hero-copy,
+.hero-art,
+.hero-bottom {
+  position: relative;
+  z-index: 1;
+}
+.hero h1 {
+  color: #f8f6fc;
+}
+.hero h1 > span:nth-child(2) {
+  color: var(--yellow);
+}
+.hero h1 em {
+  color: #b9d9ff;
+}
+.hero .lead {
+  color: #f1e8f5;
+}
+.hero .eyebrow {
+  color: #e7d9ee;
+}
+.hero .dot {
+  background: #fab522;
+}
+.hero .button {
+  color: #14015a;
+}
+.hero .button:hover {
+  background: #ffd06c;
+}
+.hero .hero-sticker {
+  background: #510047;
+  border-color: #cf8ebd;
+  color: #fff7f0;
+}
+.sound-card {
+  background: #1b355a;
+  border-color: #89bcf1;
+}
+.sound-bars i {
+  background: #fab522;
+}
+
+.header {
+  background: #fbf9fff2;
+  border-color: #ddd3e6;
+}
+.edition {
+  background: #5b316c;
+}
+.ticker {
+  background: #fab522;
+  color: #14015a;
+  border-color: #d87421;
+}
+.ticker i {
+  color: #510047;
+}
+.format-orange {
+  background: #fab522;
+  color: #14015a;
+}
+.format-purple {
+  background: #5b316c;
+  color: #fff7fa;
+}
+.format-blue {
+  background: #1b355a;
+  color: #f8f6fc;
+}
+.community {
+  background: #e9dcec;
+  color: #1b355a;
+}
+.community .eyebrow {
+  color: #5b316c;
+}
+.community-symbol {
+  color: #b1016d;
+}
+.community .button {
+  background: #5b316c;
+}
+.community .button:hover {
+  background: #510047;
+}
+.art-card,
+.collection-card,
+.account-box {
+  background: #fffcff;
+  border-color: #ddd3e6;
+}
+.art-frame {
+  background: #ead9ef;
+}
+.art-card:nth-child(3n + 2) .art-frame {
+  background: #f8e4b8;
+}
+.art-card:nth-child(3n + 3) .art-frame {
+  background: #d6e7fa;
+}
+.art-dialog {
+  background: #fffcff;
+}
+.artist-cover-placeholder {
+  background: #ead9ef;
+  color: #5b316c;
+}
+.order-summary,
+.membership-banner,
+.price-estimator {
+  background: #f4e9ed;
+}
+.review-note {
+  background: #e5effb;
+  border-color: #5b316c;
+}
+.price-estimator input,
+.creator-form input,
+.creator-form textarea,
+.creator-form select {
+  background: #fffcff;
+  color: #1b355a;
+  border-color: #bfafcc;
+}
+.admin-stats > div {
+  background: #e9dcec;
+}
+.footer,
+.developer-credit {
+  border-color: #ddd3e6;
+}
+
+/* Solo las ilustraciones CSS de maqueta toman nuevos colores. */
+.abstract.coral {
+  --c1: #b1016d;
+  --c2: #fab522;
+  --c3: #5b316c;
+  background: #f3e9f7;
+}
+.abstract.green {
+  --c1: #89bcf1;
+  --c2: #5b316c;
+  --c3: #1b355a;
+  background: #e8effa;
+}
+.abstract.purple {
+  --c1: #5b316c;
+  --c2: #a03a55;
+  --c3: #510047;
+  background: #f1e3ee;
+}
+.abstract.blue {
+  --c1: #89bcf1;
+  --c2: #fab522;
+  --c3: #14015a;
+  background: #e9ecf7;
+}
+
+@keyframes color-drift {
+  from {
+    transform: translate3d(-3%, -4%, 0) rotate(-8deg) scale(0.96);
+  }
+  to {
+    transform: translate3d(10%, 8%, 0) rotate(10deg) scale(1.12);
+  }
+}
+@media (max-width: 800px) {
+  .color-mist > span {
+    filter: blur(30px);
+  }
+  .color-mist-hero > span {
+    min-width: 260px;
+    min-height: 400px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .color-mist > span {
+    animation: none;
+    transform: none;
+  }
+}
+@media print {
+  .color-mist {
+    display: none;
+  }
+}

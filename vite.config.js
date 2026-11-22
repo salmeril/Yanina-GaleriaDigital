@@ -79,21 +79,40 @@ export default defineConfig(({ mode }) => {
       {
         name: "gallery-security-headers",
         generateBundle() {
-          const headers = [
-            "/*",
-            `  Content-Security-Policy: ${csp}`,
-            "  X-Content-Type-Options: nosniff",
-            "  X-Frame-Options: DENY",
-            "  Referrer-Policy: strict-origin-when-cross-origin",
-            "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()",
-            "  Strict-Transport-Security: max-age=31536000",
-            "  Cross-Origin-Opener-Policy: same-origin",
-            "",
-          ].join("\n");
+          const securityHeaders = {
+            "Content-Security-Policy": csp,
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Permissions-Policy":
+              "camera=(), microphone=(), geolocation=(), payment=()",
+            "Strict-Transport-Security": "max-age=31536000",
+            "Cross-Origin-Opener-Policy": "same-origin",
+          };
+          const entries = Object.entries(securityHeaders);
           this.emitFile({
             type: "asset",
             fileName: "_headers",
-            source: headers,
+            source: [
+              "/*",
+              ...entries.map(([name, value]) => `  ${name}: ${value}`),
+              "",
+            ].join("\n"),
+          });
+          // Variante para hosting Apache de DonWeb. Las rutas de la app usan hash.
+          this.emitFile({
+            type: "asset",
+            fileName: ".htaccess",
+            source: [
+              "# Galería colectiva. Generado durante npm run build.",
+              "# Comprobar mod_headers y la autorización de .htaccess en el hosting.",
+              "<IfModule mod_headers.c>",
+              ...entries.map(
+                ([name, value]) => `  Header always set ${name} "${value}"`,
+              ),
+              "</IfModule>",
+              "",
+            ].join("\n"),
           });
         },
       },

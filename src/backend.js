@@ -35,11 +35,11 @@ export async function hydrateWorks(rows) {
       .from(bucket)
       .createSignedUrls(paths, 600);
     if (error) throw error;
-    if (data.some((item) => item.error))
-      throw new Error(
-        "No se pudieron abrir algunas portadas. Actualizá el catálogo.",
-      );
-    urls = new Map(data.map((item) => [item.path, item.signedUrl]));
+    urls = new Map(
+      data
+        .filter((item) => !item.error)
+        .map((item) => [item.path, item.signedUrl]),
+    );
   }
   return rows.map((row) => ({
     ...row,
@@ -54,14 +54,12 @@ export async function hydrateWorks(rows) {
 export async function loadCatalog() {
   const [profiles, works] = await Promise.all([
     backend
-      .from("gallery_profiles")
+      .from("gallery_public_profiles")
       .select("id,name,discipline,bio")
-      .eq("is_public", true)
       .order("created_at"),
     backend
-      .from("gallery_works")
+      .from("gallery_public_works")
       .select("*")
-      .eq("status", "publicada")
       .order("created_at", { ascending: false }),
   ]);
   if (profiles.error) throw profiles.error;
@@ -76,17 +74,33 @@ export async function loadCatalog() {
 }
 
 export async function loadWorkspace(userId) {
-  const [profile, works] = await Promise.all([
+  const [profile, works, membership, reviews] = await Promise.all([
     backend.from("gallery_profiles").select("*").eq("id", userId).single(),
     backend
       .from("gallery_works")
       .select("*")
       .eq("artist_id", userId)
       .order("created_at", { ascending: false }),
+    backend
+      .from("gallery_memberships")
+      .select("*")
+      .eq("artist_id", userId)
+      .single(),
+    backend
+      .from("gallery_reviews")
+      .select("id,work_id,decision,note,created_at")
+      .order("id", { ascending: false }),
   ]);
   if (profile.error) throw profile.error;
   if (works.error) throw works.error;
-  return { profile: profile.data, works: await hydrateWorks(works.data) };
+  if (membership.error) throw membership.error;
+  if (reviews.error) throw reviews.error;
+  return {
+    profile: profile.data,
+    works: await hydrateWorks(works.data),
+    membership: membership.data,
+    reviews: reviews.data,
+  };
 }
 
 export async function saveProfile(profile, fields) {
@@ -216,7 +230,7 @@ export function friendlyError(error) {
   if (error?.code === "23505")
     return "Este registro ya se guardó. Actualizá el panel para verlo.";
   if (error?.code === "42501")
-    return "No tenés permiso para esta operación. Para publicar, activá primero tu perfil público.";
+    return "No tenés permiso para esta operación. Revisá tu participación y el estado de la obra.";
   if (error?.message === "Invalid login credentials")
     return "Revisá el correo y la contraseña.";
   if (error?.message === "Email not confirmed")
@@ -226,4 +240,52 @@ export function friendlyError(error) {
   return (
     error?.message || "No pudimos completar la operación. Volvé a intentar."
   );
+}
+
+export async function loadAdmin() {
+  const [profiles, memberships, works, reviews] = await Promise.all([
+    backend
+      .from("gallery_profiles")
+      .select("id,name,discipline,bio,is_public")
+      .order("created_at"),
+    backend.from("gallery_memberships").select("*").order("created_at"),
+    backend
+      .from("gallery_works")
+      .select("*")
+      .in("status", ["revision", "publicada"])
+      .order("created_at", { ascending: false }),
+    backend
+      .from("gallery_reviews")
+      .select("id,work_id,decision,note,created_at")
+      .order("id", { ascending: false }),
+  ]);
+  for (const result of [profiles, memberships, works, reviews])
+    if (result.error) throw result.error;
+  return {
+    profiles: profiles.data,
+    memberships: memberships.data,
+    works: await hydrateWorks(works.data),
+    reviews: reviews.data,
+  };
+}
+
+export async function reviewWork(work, decision, note) {
+  const { data, error } = await backend.rpc("gallery_review_work", {
+    p_work_id: work.id,
+    p_version: work.version,
+    p_decision: decision,
+    p_note: note,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMembership(membership, status) {
+  const { data, error } = await backend.rpc("gallery_set_membership", {
+    p_artist_id: membership.artist_id,
+    p_version: membership.version,
+    p_status: status,
+  });
+  if (error) throw error;
+  return data;
 }

@@ -8,6 +8,7 @@ import {
 } from "./data";
 import "./styles.css";
 import "./design.css";
+import "./atmosphere.css";
 import { backend, loadCatalog, friendlyError } from "./backend";
 import Workspace, { useAccount } from "./Workspace";
 
@@ -32,6 +33,20 @@ function ArtworkImage({ artwork, className = "" }) {
       <span className="paint paint-three" />
       <span className="drawn-line" />
       <small className="sample-label">Imagen de ejemplo</small>
+    </div>
+  );
+}
+
+// Capas decorativas de color. La animación se resuelve enteramente en CSS.
+function ColorMist({ hero = false }) {
+  return (
+    <div
+      className={`color-mist${hero ? " color-mist-hero" : ""}`}
+      aria-hidden="true"
+    >
+      <span className="mist-magenta" />
+      <span className="mist-blue" />
+      <span className="mist-gold" />
     </div>
   );
 }
@@ -113,6 +128,7 @@ function App() {
       "/artistas",
       "/yanina",
       "/mi-espacio",
+      "/admin",
       "/pedido",
     ].includes(route) || artist;
   const published = artworks.filter((work) => work.status !== "borrador");
@@ -266,6 +282,7 @@ function App() {
       >
         Ir al contenido
       </a>
+      <ColorMist />
       <div className="edition">
         {backend
           ? "GALERÍA COLECTIVA · ARTE VISUAL · MÚSICA · ENCUENTROS"
@@ -277,6 +294,7 @@ function App() {
           <a href="#/galeria">Obras</a>
           <a href="#/artistas">Artistas</a>
           <a href="#/yanina">Yanina</a>
+          {account.isAdmin && <a href="#/admin">Administración</a>}
           <a
             href="#/pedido"
             aria-label={`Selección de prueba, ${cart.length} obras`}
@@ -319,6 +337,7 @@ function App() {
         {route === "/" && (
           <>
             <section className="hero wrap">
+              <ColorMist hero />
               <div className="hero-copy reveal">
                 <p className="eyebrow">
                   <span className="dot" /> Una galería. Muchas formas de crear.
@@ -606,8 +625,12 @@ function App() {
             </a>
           </section>
         )}
-        {route === "/mi-espacio" && (
-          <Workspace account={account} onCatalogChange={refreshCatalog} />
+        {["/mi-espacio", "/admin"].includes(route) && (
+          <Workspace
+            account={account}
+            onCatalogChange={refreshCatalog}
+            adminOnly={route === "/admin"}
+          />
         )}
         {route === "/pedido" && (
           <section className="section wrap">

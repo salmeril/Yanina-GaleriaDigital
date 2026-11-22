@@ -10,12 +10,15 @@ import {
   friendlyError,
 } from "./backend";
 import { workTypes, formatPrice } from "./data";
+import AdminDashboard from "./AdminDashboard";
+import PriceEstimator from "./PriceEstimator";
 
 export function useAccount() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(Boolean(backend));
   const [recovery, setRecovery] = useState(recoveryLink);
   const [error, setError] = useState("");
+  const [role, setRole] = useState(null);
   useEffect(() => {
     if (!backend) return;
     let active = true;
@@ -55,11 +58,38 @@ export function useAccount() {
       subscription.unsubscribe();
     };
   }, []);
+  useEffect(() => {
+    let active = true;
+    setRole(null);
+    const userId = session?.user.id;
+    if (backend && userId) {
+      backend
+        .rpc("gallery_is_admin")
+        .then(({ data, error: failure }) => {
+          if (active)
+            setRole({
+              userId,
+              isAdmin: Boolean(data),
+              error: failure ? friendlyError(failure) : "",
+            });
+        })
+        .catch((failure) => {
+          if (active)
+            setRole({ userId, isAdmin: false, error: friendlyError(failure) });
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [session?.user.id]);
   return {
     session,
-    loading,
+    loading: loading || Boolean(session && role?.userId !== session.user.id),
+    isAdmin: Boolean(
+      session && role?.userId === session.user.id && role?.isAdmin,
+    ),
     recovery,
-    error,
+    error: error || role?.error || "",
     finishRecovery: () => setRecovery(false),
   };
 }
@@ -215,7 +245,11 @@ function AccessForm({ mode, onMode, onPasswordSaved }) {
   );
 }
 
-export default function Workspace({ account, onCatalogChange }) {
+export default function Workspace({
+  account,
+  onCatalogChange,
+  adminOnly = false,
+}) {
   const [mode, setMode] = useState("login");
   const [passwordChange, setPasswordChange] = useState(false);
   if (account.loading)
@@ -277,6 +311,26 @@ export default function Workspace({ account, onCatalogChange }) {
         />
       </section>
     );
+  if (adminOnly) {
+    if (!account.isAdmin)
+      return (
+        <section className="section wrap">
+          <h1 className="page-title">
+            Acceso de <em>administración.</em>
+          </h1>
+          <p className="lead">Tu cuenta no tiene permisos para este panel.</p>
+          <a className="button" href="#/mi-espacio">
+            Ir a mi espacio
+          </a>
+        </section>
+      );
+    return (
+      <AdminDashboard
+        user={account.session.user}
+        onCatalogChange={onCatalogChange}
+      />
+    );
+  }
   return (
     <ArtistDashboard
       key={account.session.user.id}
@@ -295,6 +349,10 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
   const [editing, setEditing] = useState(null);
   const [newKey, setNewKey] = useState(0);
   const request = useRef(0);
+  const participationEnabled =
+    data?.membership.status === "habilitada" &&
+    (!data.membership.valid_until ||
+      new Date(data.membership.valid_until) > new Date());
 
   async function refresh() {
     const revision = ++request.current;
@@ -348,11 +406,13 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
     setError("");
     setMessage("");
     try {
-      const status = work.status === "publicada" ? "borrador" : "publicada";
+      const status = ["publicada", "revision"].includes(work.status)
+        ? "borrador"
+        : "revision";
       await setWorkStatus(work, status);
       setMessage(
-        status === "publicada"
-          ? "La obra se publicó en tu sala."
+        status === "revision"
+          ? "La obra se envió a revisión."
           : "La obra volvió a borrador.",
       );
       await refresh();
@@ -411,6 +471,27 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
         </p>
       ) : (
         <>
+          <div className="membership-banner">
+            <strong>
+              Participación{" "}
+              {
+                {
+                  pendiente: "pendiente de habilitación",
+                  habilitada: participationEnabled ? "habilitada" : "vencida",
+                  suspendida: "suspendida para publicación",
+                }[data.membership.status]
+              }
+            </strong>
+            <p>
+              {participationEnabled
+                ? "Podés preparar tus trabajos y enviarlos a revisión."
+                : "Podés preparar tus borradores. La administración debe habilitar tu participación para enviarlos a revisión."}
+            </p>
+            <small>
+              La modalidad de publicación se definirá con los futuros planes de
+              la galería.
+            </small>
+          </div>
           <div className="creator-grid">
             <form
               className="creator-form account-box"
@@ -454,17 +535,19 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
               </label>
               <p className="delivery-note">
                 Tu correo es privado. Al activar el perfil se muestran tu nombre
-                artístico, disciplina y presentación. Si lo ocultás, tus obras
-                también dejan de aparecer en el catálogo público.
+                artístico, disciplina y presentación una vez habilitada tu
+                participación. Si lo ocultás, tus obras también dejan de
+                aparecer en el catálogo público.
               </p>
               <button className="button" disabled={busy}>
                 Guardar perfil
               </button>
-              {data.profile.is_public && (
-                <a className="text-link" href={`#/artistas/${user.id}`}>
-                  Ver mi sala
-                </a>
-              )}
+              {data.profile.is_public &&
+                data.membership.status === "habilitada" && (
+                  <a className="text-link" href={`#/artistas/${user.id}`}>
+                    Ver mi sala
+                  </a>
+                )}
             </form>
             <div className="account-box">
               <h2>{editing ? "Editar obra" : "Cargar una obra"}</h2>
@@ -489,9 +572,10 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
             <span>{data.works.length} trabajo(s)</span>
           </div>
           <p className="delivery-note">
-            Publicá cuando tu perfil esté visible y la obra tenga portada. Podés
-            volver a borrador cuando lo necesites. Las ventas y entregas todavía
-            están en preparación.
+            Enviá tus obras a revisión cuando tu participación esté habilitada,
+            tu perfil sea público y tengan portada. La administración aprobará
+            su publicación o te dejará una observación. Al editar una obra
+            vuelve a borrador.
           </p>
           <div className="workspace-works">
             {data.works.map((work) => (
@@ -502,8 +586,26 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                 <h3>{work.title}</h3>
                 <p>
                   {formatPrice(work.price)} ARS ·{" "}
-                  {work.status === "publicada" ? "Publicada" : "Borrador"}
+                  {
+                    {
+                      publicada: "Publicada",
+                      revision: "En revisión",
+                      cambios: "Cambios solicitados",
+                      borrador: "Borrador",
+                    }[work.status]
+                  }
                 </p>
+                {data.reviews.find((review) => review.work_id === work.id)
+                  ?.note && (
+                  <p className="review-note">
+                    <strong>Última observación</strong>
+                    <br />
+                    {
+                      data.reviews.find((review) => review.work_id === work.id)
+                        .note
+                    }
+                  </p>
+                )}
                 <div className="account-actions">
                   <button
                     className="small-button"
@@ -519,14 +621,16 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                     className="small-button"
                     disabled={
                       busy ||
-                      (work.status !== "publicada" &&
-                        (!data.profile.is_public || !work.cover_path))
+                      (!["publicada", "revision"].includes(work.status) &&
+                        (!data.profile.is_public ||
+                          !work.cover_path ||
+                          !participationEnabled))
                     }
                     onClick={() => toggle(work)}
                   >
-                    {work.status === "publicada"
+                    {["publicada", "revision"].includes(work.status)
                       ? "Volver a borrador"
-                      : "Publicar en mi sala"}
+                      : "Enviar a revisión"}
                   </button>
                 </div>
               </article>
@@ -544,6 +648,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
 function WorkForm({ userId, previous, onSaved, onCancel, onBusy }) {
   const [identity] = useState(() => previous || { id: crypto.randomUUID() });
   const [type, setType] = useState(previous?.type || "fisica");
+  const [price, setPrice] = useState(previous?.price ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function submit(event) {
@@ -584,7 +689,7 @@ function WorkForm({ userId, previous, onSaved, onCancel, onBusy }) {
           details,
           alt,
           price,
-          status: identity.status || "borrador",
+          status: "borrador",
         },
         cover,
         values.get("audio"),
@@ -598,115 +703,121 @@ function WorkForm({ userId, previous, onSaved, onCancel, onBusy }) {
     }
   }
   return (
-    <form className="creator-form" onSubmit={submit}>
-      <label>
-        Título
-        <input
-          name="title"
-          required
-          maxLength="100"
-          defaultValue={previous?.title}
-        />
-      </label>
-      <div className="form-row">
+    <>
+      <PriceEstimator currentPrice={price} onApply={setPrice} />
+      <form className="creator-form" onSubmit={submit}>
         <label>
-          Formato
-          <select
-            value={type}
-            onChange={(event) => setType(event.target.value)}
-          >
-            {workTypes
-              .filter((item) => item.id !== "todas")
-              .map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label>
-          Precio en ARS
+          Título
           <input
-            name="price"
-            type="number"
+            name="title"
             required
-            min="0.01"
-            step="0.01"
-            max="999999999"
-            defaultValue={previous?.price}
+            maxLength="100"
+            defaultValue={previous?.title}
           />
         </label>
-      </div>
-      <label>
-        Técnica o disciplina
-        <input
-          name="medium"
-          required
-          maxLength="100"
-          defaultValue={previous?.medium}
-        />
-      </label>
-      <label>
-        {type === "fisica"
-          ? "Descripción, medidas, materiales y presentación"
-          : "Descripción, formato y condiciones de uso"}
-        <textarea
-          name="details"
-          rows="4"
-          maxLength="1500"
-          required
-          defaultValue={previous?.details}
-        />
-      </label>
-      <label>
-        Portada · JPG, PNG o WebP, hasta 5 MB
-        <input
-          name="cover"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-        />
-      </label>
-      {previous?.cover_path && (
-        <small>Si no elegís otra portada, se conserva la actual.</small>
-      )}
-      <label>
-        Descripción visual de la portada
-        <input name="alt" maxLength="250" defaultValue={previous?.alt} />
-      </label>
-      <label>
-        Audio de muestra opcional · MP3, WAV u OGG, hasta 10 MB
-        <input
-          name="audio"
-          type="file"
-          accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg"
-        />
-      </label>
-      {previous?.audio_path && (
-        <small>La obra ya tiene un audio de muestra. Podés reemplazarlo.</small>
-      )}
-      <p className="delivery-note">
-        Cargá únicamente material propio o autorizado. La portada y el audio de
-        muestra serán accesibles al publicar. El archivo digital que se venderá
-        se incorporará en la etapa de pagos y entrega privada.
-      </p>
-      <p className="form-error" role="alert">
-        {error}
-      </p>
-      <div className="account-actions">
-        <button className="button" disabled={busy}>
-          {busy ? "Guardando…" : "Guardar obra"}
-        </button>
-        {previous && (
-          <button
-            type="button"
-            className="small-button"
-            onClick={onCancel}
-            disabled={busy}
-          >
-            Cancelar edición
-          </button>
+        <div className="form-row">
+          <label>
+            Formato
+            <select
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+            >
+              {workTypes
+                .filter((item) => item.id !== "todas")
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label>
+            Precio sugerido por vos · ARS
+            <input
+              name="price"
+              type="number"
+              required
+              min="0.01"
+              step="0.01"
+              max="999999999"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+            />
+          </label>
+        </div>
+        <label>
+          Técnica o disciplina
+          <input
+            name="medium"
+            required
+            maxLength="100"
+            defaultValue={previous?.medium}
+          />
+        </label>
+        <label>
+          {type === "fisica"
+            ? "Descripción, medidas, materiales y presentación"
+            : "Descripción, formato y condiciones de uso"}
+          <textarea
+            name="details"
+            rows="4"
+            maxLength="1500"
+            required
+            defaultValue={previous?.details}
+          />
+        </label>
+        <label>
+          Portada · JPG, PNG o WebP, hasta 5 MB
+          <input
+            name="cover"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          />
+        </label>
+        {previous?.cover_path && (
+          <small>Si no elegís otra portada, se conserva la actual.</small>
         )}
-      </div>
-    </form>
+        <label>
+          Descripción visual de la portada
+          <input name="alt" maxLength="250" defaultValue={previous?.alt} />
+        </label>
+        <label>
+          Audio de muestra opcional · MP3, WAV u OGG, hasta 10 MB
+          <input
+            name="audio"
+            type="file"
+            accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg"
+          />
+        </label>
+        {previous?.audio_path && (
+          <small>
+            La obra ya tiene un audio de muestra. Podés reemplazarlo.
+          </small>
+        )}
+        <p className="delivery-note">
+          Cargá únicamente material propio o autorizado. La portada y el audio
+          de muestra serán accesibles al publicar. El archivo digital que se
+          venderá se incorporará en la etapa de pagos y entrega privada.
+        </p>
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+        <div className="account-actions">
+          <button className="button" disabled={busy}>
+            {busy ? "Guardando…" : "Guardar obra"}
+          </button>
+          {previous && (
+            <button
+              type="button"
+              className="small-button"
+              onClick={onCancel}
+              disabled={busy}
+            >
+              Cancelar edición
+            </button>
+          )}
+        </div>
+      </form>
+    </>
   );
 }

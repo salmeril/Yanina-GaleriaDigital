@@ -968,3 +968,159 @@ h2 em {
     flex-wrap: wrap;
   }
 }
+
+/* Administración, revisión de obras y orientación de precios */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-block: 30px;
+}
+.admin-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 16px;
+  padding: 22px;
+  background: #eee1f6;
+}
+.admin-stats strong {
+  color: var(--violet);
+  font:
+    800 38px "Manrope",
+    sans-serif;
+}
+.admin-stats span {
+  font-size: 12px;
+}
+.admin-members {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.admin-members h2 {
+  font-size: 25px;
+}
+.admin-members .account-box {
+  margin-top: 0;
+}
+.user-id {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 10px;
+}
+.admin-review {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr;
+  gap: 30px;
+}
+.admin-review h2 {
+  font-size: 32px;
+}
+.admin-review .artist-credit {
+  margin-left: 0;
+}
+.review-preview img {
+  max-height: 480px;
+  object-fit: contain;
+  background: #eee1f6;
+  border-radius: 10px;
+}
+.review-preview audio {
+  width: 100%;
+  margin-top: 15px;
+}
+.review-description {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: 14px;
+  margin-block: 22px;
+}
+.membership-banner {
+  margin-block: 30px;
+  border-left: 4px solid var(--orange);
+  background: #fff0dd;
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.membership-banner p {
+  margin-top: 8px;
+}
+.membership-banner small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+}
+.review-note {
+  margin-block: 18px;
+  padding: 15px;
+  border-left: 3px solid var(--turquoise);
+  background: #e3f0ef;
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.price-estimator {
+  padding: 18px;
+  margin-block: 20px;
+  border: 1px solid #dccccf;
+  border-radius: 12px;
+  background: #fff0dd;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.price-estimator summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--violet);
+}
+.price-estimator > p {
+  margin-block: 15px;
+}
+.price-estimator label {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.price-estimator input {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #bea8c4;
+  background: #fffaf2;
+}
+.price-reference {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #dccccf;
+}
+.price-reference p {
+  margin-bottom: 10px;
+}
+.price-reference strong {
+  display: block;
+  color: var(--violet);
+  font-size: 16px;
+}
+@media (max-width: 800px) {
+  .admin-review {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 540px) {
+  .admin-members {
+    grid-template-columns: 1fr;
+  }
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+  .admin-stats > div {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+  }
+}

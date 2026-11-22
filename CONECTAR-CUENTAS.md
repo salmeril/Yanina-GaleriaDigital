@@ -1,6 +1,6 @@
 # Activar cuentas y obras permanentes
 
-Esta versión usa Supabase para las cuentas, la base de datos y las portadas o audios de muestra. La web sigue compilándose con React y Vite en Netlify desde GitHub.
+Esta versión usa Supabase para las cuentas, la base de datos y las portadas o audios de muestra. La web se compila con React y Vite. El alojamiento final será DonWeb. Leé `PUBLICAR-DONWEB.md` para ese destino. Las instrucciones de Netlify de esta guía corresponden al adelanto de revisión.
 
 ## 1. Preparar el proyecto de Supabase
 
@@ -93,7 +93,7 @@ Las variables `VITE_` se incorporan durante la compilación. Agregarlas después
 3. Guardá el nombre artístico, la disciplina y la presentación. Activá el perfil público cuando quieras aparecer en el directorio.
 4. Cargá una obra con portada y descripción visual. Para música podés agregar un audio de muestra.
 5. Guardá la obra. Empieza en borrador.
-6. Publicala y abrí su sala desde una ventana privada del navegador.
+6. Desde una cuenta administradora, habilitá la participación. Desde la cuenta del artista, enviá la obra a revisión. La administración debe aprobarla antes de verla en la galería pública. Seguí `ADMIN-Y-PLANES.md`.
 7. Recargá la página para verificar que el trabajo quedó guardado.
 8. Volvé a borrador y comprobá que la obra deje de aparecer en el catálogo público.
 9. Cerrá sesión. Usá Olvidé mi contraseña y completá el cambio desde el correo.
@@ -109,7 +109,9 @@ Las URL temporales de portadas y audios duran hasta diez minutos. Una URL ya emi
 - Creación y edición persistente de obras físicas, arte digital y composiciones.
 - Portadas JPG, PNG o WebP de hasta 5 MB desde el panel.
 - Audio de muestra MP3, WAV u OGG de hasta 10 MB.
-- Publicación y vuelta a borrador. Cada artista publica sus propias obras.
+- Envío a revisión, aprobación por administración, observaciones y vuelta a borrador.
+- Habilitación o suspensión de la participación, controlada por administración.
+- Orientador de precio que usa costos y dedicación declarados por el artista.
 - Permisos comprobados por la base de datos y el almacenamiento.
 - Detección de ediciones concurrentes por versión.
 
@@ -117,7 +119,7 @@ El bucket privado impone un máximo de 10 MB por archivo y tipos MIME permitidos
 
 ## Qué falta conectar
 
-El carrito sigue siendo una selección de demostración. Pagos, pedidos, reservas de originales, comisiones, envíos y entrega del archivo comprado requieren otra integración. Tampoco se incorporó un rol de administración ni aprobación por Yanina. En esta versión cada artista decide cuándo publicar su propio trabajo.
+El carrito sigue siendo una selección de demostración. Pagos, pedidos, reservas de originales, comisiones, envíos y entrega del archivo comprado requieren otra integración. El rol de administración y la aprobación de obras se configuran con `ADMIN-Y-PLANES.md`. Los cobros de los futuros planes de publicación siguen pendientes.
 
 Antes de habilitar ventas y el registro al público, completaremos los datos reales de la galería y sus condiciones de participación.
 
