@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createId } from "./ids";
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -103,6 +104,22 @@ export async function loadWorkspace(userId) {
   };
 }
 
+export async function loadAccountDetails(userId) {
+  const { data, error } = await backend.from("gallery_account_details").select("*").eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveAccountDetails(userId, previous, fields) {
+  const query = previous?.version
+    ? backend.from("gallery_account_details").update(fields).eq("user_id", userId).eq("version", previous.version)
+    : backend.from("gallery_account_details").insert({ user_id: userId, ...fields });
+  const { data, error } = await query.select().maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Los datos cambiaron en otra pestaña. Actualizá el panel antes de continuar.");
+  return data;
+}
+
 export async function saveProfile(profile, fields) {
   const { data, error } = await backend
     .from("gallery_profiles")
@@ -146,7 +163,7 @@ async function uploadFile(userId, file) {
     "audio/x-wav": "wav",
     "audio/ogg": "ogg",
   }[file.type];
-  const path = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const path = `${userId}/${createId()}.${extension}`;
   const { error } = await backend.storage
     .from(bucket)
     .upload(path, file, { upsert: false, contentType: file.type });
@@ -227,6 +244,8 @@ export async function setWorkStatus(work, status) {
 }
 
 export function friendlyError(error) {
+  if (error?.code === "captcha_failed" || error?.message?.toLowerCase().includes("captcha"))
+    return "No pudimos validar la verificación humana. Actualizá la página y completala de nuevo.";
   if (error?.code === "email_address_not_authorized" || error?.message?.includes("Email address not authorized"))
     return "El envío de correos todavía está limitado a las cuentas del equipo de prueba. Contactá a la galería para habilitar tu registro.";
   if (error?.code === "over_email_send_rate_limit" || error?.code === "over_request_rate_limit")

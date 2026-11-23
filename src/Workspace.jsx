@@ -12,6 +12,8 @@ import { workTypes, formatPrice } from "./data";
 import AdminDashboard from "./AdminDashboard";
 import PriceEstimator from "./PriceEstimator";
 import AccessForm from "./AccessForm";
+import { createId } from "./ids";
+import SellerDetails from "./SellerDetails";
 
 export function useAccount() {
   const [session, setSession] = useState(null);
@@ -302,6 +304,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
         {error}
       </p>
       <p role="status">{message}</p>
+      <SellerDetails userId={user.id} />
       <button className="text-button" onClick={refresh} disabled={busy}>
         Actualizar datos del panel
       </button>
@@ -488,7 +491,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
 }
 
 function WorkForm({ userId, previous, onSaved, onCancel, onBusy }) {
-  const [identity] = useState(() => previous || { id: crypto.randomUUID() });
+  const [identity] = useState(() => previous || {});
   const [type, setType] = useState(previous?.type || "fisica");
   const [price, setPrice] = useState(previous?.price ?? "");
   const [busy, setBusy] = useState(false);
@@ -523,7 +526,7 @@ function WorkForm({ userId, previous, onSaved, onCancel, onBusy }) {
     try {
       await saveWork(
         userId,
-        identity,
+        { ...identity, id: identity.id || createId() },
         {
           title,
           type,

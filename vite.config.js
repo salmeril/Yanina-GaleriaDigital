@@ -4,6 +4,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   const url = env.VITE_SUPABASE_URL?.trim();
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+  const captchaOrigin = env.VITE_TURNSTILE_SITE_KEY?.trim() ? "https://challenges.cloudflare.com" : "";
   let supabaseOrigin = "";
 
   if (url || key) {
@@ -59,12 +60,13 @@ export default defineConfig(({ mode }) => {
   const websocketOrigin = supabaseOrigin.replace("https:", "wss:");
   const csp = [
     "default-src 'self'",
-    "script-src 'self'",
+    `script-src 'self' ${captchaOrigin}`,
+    `frame-src ${captchaOrigin || "'none'"}`,
     "style-src 'self' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     `img-src 'self' data: blob: ${supabaseOrigin}`,
     `media-src 'self' blob: ${supabaseOrigin}`,
-    `connect-src 'self' ${supabaseOrigin} ${websocketOrigin}`,
+    `connect-src 'self' ${supabaseOrigin} ${websocketOrigin} ${captchaOrigin}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

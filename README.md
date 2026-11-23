@@ -1,10 +1,12 @@
-# Galería colectiva · Usuarios v0.2.1
+# Galería colectiva · Usuarios v0.3.0
 
 React + Vite para trabajar en VS Code. La publicación final está prevista en DonWeb, con Netlify como adelanto de revisión.
 
 Esta versión integra Supabase para registro por correo, acceso, recuperación de contraseña, perfiles y obras persistentes. Cada artista administra su propia sala. El catálogo público muestra los trabajos publicados por perfiles visibles.
 
 Leé **ACTUALIZAR-USUARIOS.md** para instalar esta actualización conservando tu `.env.local`.
+
+Esta actualización agrega fecha de nacimiento y teléfono al registro, ficha privada para datos personales y domicilio, integración de Turnstile y recuperación ante errores del panel. Requiere ejecutar `supabase/actualizar-datos-privados.sql` si ya tenés una base anterior.
 
 ## Empezar
 
@@ -26,6 +28,8 @@ El menú muestra Ingresar y Crear cuenta. Sin las dos variables de conexión la 
 - `src/main.jsx` contiene la galería pública y la selección de demostración.
 - `src/AccessForm.jsx` contiene ingreso, registro, recuperación y reenvío de confirmación.
 - `src/accounts.css` contiene los estilos de acceso.
+- `src/SellerDetails.jsx` contiene la ficha privada de participación y venta.
+- `src/PanelBoundary.jsx` contiene la recuperación ante errores de render del panel.
 - `src/Workspace.jsx` contiene la sesión y los paneles de artistas y administración.
 - `src/AdminDashboard.jsx` contiene habilitación de participantes y revisión de obras.
 - `src/PriceEstimator.jsx` y `src/pricing.js` contienen el orientador de precio por costos.

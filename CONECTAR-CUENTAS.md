@@ -2,6 +2,8 @@
 
 Esta versión usa Supabase para las cuentas, la base de datos y las portadas o audios de muestra. La web se compila con React y Vite. El alojamiento final será DonWeb. Leé `PUBLICAR-DONWEB.md` para ese destino. Las instrucciones de Netlify de esta guía corresponden al adelanto de revisión.
 
+Si ya tenés cuentas de una versión anterior, seguí **ACTUALIZAR-USUARIOS.md** y ejecutá la migración de datos privados.
+
 ## 1. Preparar el proyecto de Supabase
 
 Entrá a https://supabase.com/dashboard y creá un proyecto para la galería. Guardá la contraseña de la base de datos en tu gestor de contraseñas. Esta contraseña no se agrega a la web.
@@ -143,7 +145,7 @@ La revisión de dependencias con `npm audit --omit=dev` no encontró vulnerabili
 
 - Activar autenticación en dos pasos en GitHub, Netlify y Supabase para quienes administren el proyecto.
 - Mantener la confirmación de email y revisar los límites de intentos de Supabase Auth.
-- Si se decide activar CAPTCHA, conectar primero su widget en los formularios. La interfaz actual todavía no envía tokens CAPTCHA.
+- Activar Turnstile siguiendo ACTUALIZAR-USUARIOS.md. La interfaz envía tokens en registro, ingreso, recuperación y reenvío. Falta configurar la Site Key en la compilación y activar la Secret Key en Supabase para verificar los tokens en el servicio.
 - Definir y probar un respaldo de la base de datos y de los archivos. La disponibilidad de copias y recuperación depende del servicio contratado.
 - Publicar esta versión y comprobar en las respuestas HTTP de Netlify que aparezcan Content-Security-Policy y X-Frame-Options. El entorno local de Vite no aplica el archivo _headers.
 - Repetir las pruebas de dos cuentas con el proyecto Supabase real antes de abrir el registro al público.

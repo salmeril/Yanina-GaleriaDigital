@@ -1,59 +1,72 @@
-# Usuarios · versión 0.2.1
+# Usuarios, ficha privada y verificación humana · v0.3.0
 
-Esta entrega hace visible el acceso desde el menú y separa las pantallas de usuarios. Mantiene la paleta, la bruma y las herramientas de artistas y administración.
-
-## Instalar en tu proyecto actual
+## Instalar conservando tu conexión
 
 1. Detené Vite con Ctrl + C.
-2. Copiá el contenido de la carpeta `galeria-yanina` del ZIP dentro de la carpeta de tu repositorio donde ya está `package.json`. Reemplazá los archivos del mismo nombre. No crees una segunda carpeta anidada `galeria-yanina`.
-3. Conservá tu archivo `.env.local` y la carpeta `.git`. Esta entrega no incluye credenciales.
-4. Abrí una terminal en esa carpeta y ejecutá `npm ci` y después `npm run dev`.
-5. Abrí la URL que indique Vite. En el menú deben aparecer **Ingresar** y **Crear cuenta**.
+2. Copiá el contenido de `galeria-yanina` dentro de tu proyecto, donde está `package.json`, reemplazando los archivos del mismo nombre. Conservá `.env.local` y `.git`.
+3. Ejecutá `npm ci` para instalar también el componente de verificación humana.
+4. En Supabase → SQL Editor, ejecutá **supabase/actualizar-datos-privados.sql** completo. Es la migración para cuentas existentes, repetible sin borrar cuentas ni obras. Para un proyecto nuevo, `supabase/schema.sql` ya incluye todo.
+5. Ejecutá `npm run dev`, abrí la URL indicada e ingresá con tu cuenta existente.
 
-## Pantallas incluidas
+## Datos del registro y de la cuenta
 
-| Acceso | Ruta después del dominio o puerto |
-| --- | --- |
-| Ingresar | `/#/ingresar` |
-| Crear cuenta | `/#/registro` |
-| Recuperar contraseña | `/#/recuperar` |
-| Reenviar confirmación | `/#/reenviar-confirmacion` |
-| Perfil y obras | `/#/mi-espacio` |
-| Administración | `/#/admin` |
+El registro pide nombre artístico, fecha de nacimiento, correo y contraseña confirmada. El teléfono de contacto es opcional en ese primer paso. La fecha de nacimiento permite calcular la edad y se conserva como dato privado.
 
-La cuenta administradora usa el mismo formulario de ingreso. La página no permite elegirse administrador al registrarse. El permiso se asigna en Supabase con `supabase/asignar-admin.sql`, después de crear la cuenta, siguiendo `ADMIN-Y-PLANES.md`.
+En **Mi espacio → Datos personales y de venta**, la persona completa nombre y apellido, fecha de nacimiento, teléfono, país, provincia, localidad y domicilio. La dirección, provincia y código postal son obligatorios al indicar que ofrecerá obras físicas. Para propuestas digitales o composiciones, el domicilio es opcional en esta etapa.
 
-## Conectar el servicio real
+Estos datos son declarados por la persona. No verifican identidad ni habilitan cobros automáticamente. No se publican en la sala, el directorio ni las vistas del catálogo. La ficha está protegida en la base para que cada participante lea y modifique la suya. El permiso de moderar publicaciones no concede acceso a domicilios ajenos. Cuando se implemente la operación comercial, se definirá el acceso mínimo a datos de cada pedido.
 
-Si ya ejecutaste `supabase/schema.sql` correctamente, esta actualización de formularios no necesita ejecutar SQL nuevo. Conserva las tablas y las reglas de permisos.
+Las cuentas existentes siguen funcionando. Si no se ejecuta la migración, la ficha privada mostrará que no puede cargarse, sin impedir el resto del panel.
 
-En `.env.local`, al lado de `package.json`, completá los nombres exactos:
+## Pantalla en blanco
+
+El formulario de obra generaba un UUID durante el primer render. Algunos navegadores o accesos HTTP de red local no exponen `crypto.randomUUID`. Se mueve esa creación al guardado y se agrega compatibilidad usando `crypto.getRandomValues`. Si tampoco está disponible, el formulario pide usar localhost o HTTPS en vez de romper el panel.
+
+Una barrera de errores mantiene la navegación de la galería y ofrece reintentar o cerrar sesión si falla el render del panel. Esto no confirma la causa exacta de cualquier pantalla en blanco: si persiste el problema original, necesitamos el primer error rojo de F12 → Consola para diagnosticarlo.
+
+## Activar la verificación humana
+
+La interfaz incluye Cloudflare Turnstile y pasa el token a Supabase en registro, ingreso, recuperación y reenvío de confirmación. El token se descarta después de cada intento y también al vencer. El cambio de contraseña desde una sesión de recuperación no requiere un widget adicional.
+
+La validación de seguridad la hace Supabase. Mostrar el widget sin activar CAPTCHA en Supabase no bloquea los intentos que eviten la interfaz.
+
+### Orden de configuración
+
+1. En Cloudflare, creá un widget de Turnstile en modo **Managed**. Autorizá los hostnames en uso: `localhost` para desarrollo y `monumental-frangollo-5a2461.netlify.app` para el adelanto. Agregá el dominio final de DonWeb cuando esté disponible. No llevan protocolo, ruta ni puerto.
+2. Copiá su **Site Key pública** y agregá en tu `.env.local`:
 
 ```env
-VITE_SUPABASE_URL=https://TU-PROYECTO.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=TU-CLAVE-PUBLICABLE
+VITE_TURNSTILE_SITE_KEY=TU_SITE_KEY_PUBLICA
 ```
 
-Reemplazá los ejemplos por la Project URL y la Publishable key de tu proyecto. No uses Secret ni service_role. Reiniciá Vite después de cualquier cambio de variables.
+Conservá `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`. Reiniciá Vite. En Netlify también se carga la nueva variable y se vuelve a compilar. Para DonWeb, se compila localmente con las tres variables cargadas.
 
-Sin conexión configurada, las pantallas se pueden recorrer pero los campos permiten escribir y solo el botón de envío queda deshabilitado con el texto Conexión pendiente. Un aviso explica el estado. No simulan registro ni acceso. En desarrollo, el aviso también permite desplegar ayuda para configurar las variables.
+3. Confirmá que el widget cargue en los formularios actualizados en todos los entornos que vayas a usar.
+4. En Supabase, entrá en Settings → Authentication → Bot and Abuse Protection (o su sección equivalente de CAPTCHA), activá la protección, elegí Turnstile y guardá la **Secret Key de Turnstile** allí. La Secret Key nunca se agrega a variables `VITE_`, al código ni al repositorio.
+5. Probá registro, ingreso, recuperación y reenvío de confirmación. Con CAPTCHA activado, un formulario anterior que no envíe token será rechazado.
+6. Revisá los límites de Auth y del envío de correos en Supabase. El widget complementa esos límites y los permisos de base de datos y archivos. No constituye protección absoluta frente a todo tipo de ataque o saturación.
 
-Para probar por primera vez con el correo predeterminado de Supabase, usá el email del equipo del proyecto. Para recibir confirmaciones y recuperaciones en cuentas de artistas externos, primero configurá SMTP propio. Mantené la confirmación de correo activada.
+Sin Site Key, el registro conserva su funcionamiento previo y no muestra un widget. En desarrollo se informa la configuración pendiente. Para habilitar el registro público, completá el circuito con validación en Supabase y SMTP propio.
 
-## Mostrarlo en Netlify
+La compilación autoriza el dominio de Turnstile en las directivas CSP de scripts, frames y conexiones solo cuando la Site Key está configurada. Genera `_headers` para Netlify y `.htaccess` para Apache/DonWeb.
 
-El `.env.local` de tu máquina no se sube a GitHub. En Netlify agregá las mismas dos variables para la compilación de producción y volvé a desplegar desde GitHub. Comando `npm run build`, salida `dist`. Sin esas variables en Netlify, se verán los formularios con el aviso de acceso pendiente.
+## Verificaciones realizadas
 
-Para DonWeb, compilá con las variables cargadas y publicá el contenido de `dist` siguiendo `PUBLICAR-DONWEB.md`. DonWeb no necesita ejecutar npm en cada visita.
+- Compilación sin credenciales y con valores públicos de prueba, incluyendo Turnstile.
+- Formularios probados con respuestas simuladas de Auth: confirmación de contraseña, registro, ingreso, confirmación pendiente, recuperación y reenvío.
+- Token CAPTCHA obligatorio en los cuatro flujos cuando hay Site Key, token enviado a la llamada correcta y descarte después de uso o vencimiento. Prueba de contrato con widget simulado, sin resolver retos reales.
+- Panel de cuenta nueva renderizado con datos de prueba sin `crypto.randomUUID`; creación de UUID compatible y recuperación ante un fallo de render intencional.
+- Fechas inválidas y futuras rechazadas; edad comprobada antes y después del cumpleaños.
+- Migración repetida en PostgreSQL de prueba, conservación de cuentas existentes, privacidad entre dos participantes y un visitante, y aislamiento de domicilios incluso para administradores de publicaciones.
+- Registro ampliado revisado en navegador. El envío de correo, la sesión real, Turnstile real y el problema del navegador del usuario deben verificarse con el proyecto conectado.
 
-## Prueba con cuentas reales
+## Qué continúa
 
-Creá una cuenta, confirmá el correo e ingresá. Verificá el perfil, cierre de sesión, reingreso y recuperación de contraseña. Asigná administración con el SQL indicado. Probá otra cuenta como artista para comprobar sus obras y la revisión antes de abrir la galería al público.
+Primero confirmar que el panel ya abre en tu navegador y activar Turnstile. Después se prueba el circuito de una cuenta artista y una administradora: completar ficha, cargar obra, habilitar participación, enviar a revisión y aprobar. La etapa siguiente contempla planes de publicación, cobros, pedidos, stock, comisiones, envíos y entrega de archivos comprados. Estas operaciones comerciales todavía no están activas.
 
-La comprobación final de correos, sesión real y permisos en tu proyecto requiere tus variables y la configuración de Supabase. Esta entrega no contiene esas credenciales.
+## Documentación oficial
 
-## Verificado en esta entrega
-
-Compilación con y sin variables públicas de prueba, rechazo de claves privadas y navegación de las cuatro pantallas en el navegador. Se probaron con respuestas simuladas los formularios sin conexión, rechazo de contraseñas distintas, registro sin privilegios de administración, confirmación pendiente, ingreso, recuperación sin revelar si existe la cuenta y reenvío. La revisión de dependencias de producción no encontró vulnerabilidades conocidas en esta comprobación.
-
-Las respuestas simuladas no verifican el envío de correo, la autenticación o los permisos en tu Supabase real. Esas pruebas siguen pendientes de conexión.
+- https://supabase.com/docs/guides/auth/auth-captcha
+- https://supabase.com/docs/guides/auth/rate-limits
+- https://developers.cloudflare.com/turnstile/get-started/
+- https://developers.cloudflare.com/turnstile/reference/content-security-policy/

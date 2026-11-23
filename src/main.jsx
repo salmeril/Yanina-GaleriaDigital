@@ -12,6 +12,7 @@ import "./atmosphere.css";
 import { backend, loadCatalog, friendlyError } from "./backend";
 import Workspace, { useAccount } from "./Workspace";
 import { accessRoutes } from "./AccessForm";
+import PanelBoundary from "./PanelBoundary";
 import "./accounts.css";
 
 function ArtworkImage({ artwork, className = "" }) {
@@ -633,6 +634,7 @@ function App() {
           </section>
         )}
         {(["/mi-espacio", "/admin"].includes(route) || route in accessRoutes) && (
+          <PanelBoundary key={`${route}-${account.session?.user.id || "visitor"}`}>
           <Workspace
             account={account}
             onCatalogChange={refreshCatalog}
@@ -640,6 +642,7 @@ function App() {
             accessMode={accessRoutes[route] || "login"}
             isAccessRoute={route in accessRoutes}
           />
+          </PanelBoundary>
         )}
         {route === "/pedido" && (
           <section className="section wrap">

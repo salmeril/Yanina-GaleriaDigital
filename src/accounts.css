@@ -37,6 +37,16 @@
 .access-card a:hover { text-decoration: underline; }
 .access-card :focus-visible, .header-account a:focus-visible { outline: 3px solid #5b316c; outline-offset: 4px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.seller-details { margin-block: 26px; }
+.seller-details > summary { cursor: pointer; font-size: 20px; font-weight: 700; }
+.seller-details > summary small { display: block; margin-top: 8px; font-size: 14px; font-weight: 400; color: var(--muted); }
+.seller-details > .auth-private { margin-top: 20px; }
+.seller-details .creator-form, .seller-details input { font-size: 16px; }
+.seller-details .auth-fields label { font-size: 16px; }
+.seller-details .auth-fields small { font-size: 14px; font-weight: 400; }
+.human-check { min-width: 0; }
+.human-check > p:first-child { margin-bottom: 12px; font-size: 14px; }
+.panel-failure > p { margin-block: 20px; font-size: 16px; }
 @media (max-width: 1000px) { .header { flex-wrap: wrap; } .header nav { gap: 14px; } }
 @media (max-width: 800px) { .auth-layout { grid-template-columns: minmax(0, 1fr); gap: 32px; } .auth-intro .lead { max-width: none; } .access-card { max-width: none; } .header nav { justify-content: flex-start; } }
 @media (max-width: 540px) { .header nav { font-size: 14px; gap: 12px 16px; } .header-account { flex-wrap: wrap; gap: 16px; } .auth-layout { padding-block: 36px; } .auth-tabs { gap: 20px; } .access-card h2 { font-size: 25px; } }
