@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createId } from "./ids";
+import { validateAvatarFile } from "./avatar-files";
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -23,6 +24,21 @@ export const backend = configured
   : null;
 export const authRedirect = () => `${location.origin}${location.pathname}`;
 const bucket = "gallery-previews";
+const avatarBucket = "gallery-avatars";
+
+export async function hydrateProfiles(rows) {
+  const paths = [...new Set(rows.map(row => row.avatar_path).filter(Boolean))];
+  let urls = new Map();
+  if (paths.length) {
+    try {
+      const { data, error } = await backend.storage.from(avatarBucket).createSignedUrls(paths, 600);
+      if (!error) urls = new Map((data || []).filter(item => !item.error).map(item => [item.path, item.signedUrl]));
+    } catch {
+      // Una foto no disponible no debe impedir abrir el perfil o la galería.
+    }
+  }
+  return rows.map(row => ({ ...row, avatar_url: urls.get(row.avatar_path) || "" }));
+}
 
 export async function hydrateWorks(rows) {
   const paths = [
@@ -56,7 +72,7 @@ export async function loadCatalog() {
   const [profiles, works] = await Promise.all([
     backend
       .from("gallery_public_profiles")
-      .select("id,name,discipline,bio")
+      .select("*")
       .order("created_at"),
     backend
       .from("gallery_public_works")
@@ -66,11 +82,13 @@ export async function loadCatalog() {
   if (profiles.error) throw profiles.error;
   if (works.error) throw works.error;
   const publicArtists = new Set(profiles.data.map((profile) => profile.id));
+  const [artists, artworks] = await Promise.all([
+    hydrateProfiles(profiles.data),
+    hydrateWorks(works.data.filter(work => publicArtists.has(work.artist_id))),
+  ]);
   return {
-    artists: profiles.data,
-    artworks: await hydrateWorks(
-      works.data.filter((work) => publicArtists.has(work.artist_id)),
-    ),
+    artists,
+    artworks,
   };
 }
 
@@ -96,9 +114,10 @@ export async function loadWorkspace(userId) {
   if (works.error) throw works.error;
   if (membership.error) throw membership.error;
   if (reviews.error) throw reviews.error;
+  const [profiles, workList] = await Promise.all([hydrateProfiles([profile.data]), hydrateWorks(works.data)]);
   return {
-    profile: profile.data,
-    works: await hydrateWorks(works.data),
+    profile: profiles[0],
+    works: workList,
     membership: membership.data,
     reviews: reviews.data,
   };
@@ -120,20 +139,34 @@ export async function saveAccountDetails(userId, previous, fields) {
   return data;
 }
 
-export async function saveProfile(profile, fields) {
-  const { data, error } = await backend
-    .from("gallery_profiles")
-    .update(fields)
-    .eq("id", profile.id)
-    .eq("version", profile.version)
-    .select()
-    .maybeSingle();
-  if (error) throw error;
-  if (!data)
-    throw new Error(
-      "El perfil cambió en otra pestaña. Actualizá el panel antes de editarlo.",
-    );
-  return data;
+export async function saveProfile(profile, fields, avatarFile, removeAvatar = false) {
+  let newPath = "";
+  let confirmed = false;
+  try {
+    const values = { ...fields };
+    if (removeAvatar) values.avatar_path = null;
+    else if (avatarFile?.size) {
+      validateAvatarFile(avatarFile);
+      const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[avatarFile.type];
+      newPath = `${profile.id}/${createId()}.${extension}`;
+      const { error } = await backend.storage.from(avatarBucket).upload(newPath, avatarFile, { upsert: false, contentType: avatarFile.type });
+      if (error) throw error;
+      values.avatar_path = newPath;
+    }
+    const { data, error } = await backend.from("gallery_profiles").update(values)
+      .eq("id", profile.id).eq("version", profile.version).select().maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("El perfil cambió en otra pestaña. Actualizá el panel antes de editarlo.");
+    confirmed = true;
+    if (profile.avatar_path && profile.avatar_path !== data.avatar_path)
+      await backend.storage.from(avatarBucket).remove([profile.avatar_path]).catch(() => {});
+    return (await hydrateProfiles([data]))[0];
+  } catch (error) {
+    // La regla de almacenamiento impide borrar una foto que quedó referenciada
+    // si la base confirmó el cambio pero se perdió la respuesta al navegador.
+    if (newPath && !confirmed) await backend.storage.from(avatarBucket).remove([newPath]).catch(() => {});
+    throw error;
+  }
 }
 
 export function validateFile(file, kind) {

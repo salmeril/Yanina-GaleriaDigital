@@ -13,6 +13,7 @@ import { backend, loadCatalog, friendlyError } from "./backend";
 import Workspace, { useAccount } from "./Workspace";
 import { accessRoutes } from "./AccessForm";
 import PanelBoundary from "./PanelBoundary";
+import { Avatar } from "./Avatar";
 import "./accounts.css";
 
 function ArtworkImage({ artwork, className = "" }) {
@@ -265,8 +266,10 @@ function App() {
                 <span className="arrow-icon" />
               </span>
             </div>
-            <h3>{person.name}</h3>
-            <p>{person.discipline}</p>
+            <div className="collection-person">
+              <Avatar name={person.name} src={person.avatar_url} />
+              <div><h3>{person.name}</h3><p>{person.discipline}</p></div>
+            </div>
           </a>
         ))}
       </div>
@@ -588,9 +591,7 @@ function App() {
               ← Todas las salas
             </a>
             <div className="profile">
-              <div className="avatar" aria-hidden="true">
-                ✳
-              </div>
+              <Avatar name={artist.name} src={artist.avatar_url} className="avatar-room" />
               <div>
                 <p className="eyebrow">{artist.discipline}</p>
                 <h1 className="page-title">{artist.name}</h1>
@@ -599,7 +600,7 @@ function App() {
             </div>
             <div className="room-heading">
               <h2>Sus obras</h2>
-              <span>Catálogo de ejemplo</span>
+              <span>{backend ? "Obras publicadas" : "Catálogo de ejemplo"}</span>
             </div>
             {gallery(published.filter((work) => work.artistId === artist.id))}
           </section>

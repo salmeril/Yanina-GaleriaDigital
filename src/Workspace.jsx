@@ -14,6 +14,7 @@ import PriceEstimator from "./PriceEstimator";
 import AccessForm from "./AccessForm";
 import { createId } from "./ids";
 import SellerDetails from "./SellerDetails";
+import AvatarPicker from "./Avatar";
 
 export function useAccount() {
   const [session, setSession] = useState(null);
@@ -234,7 +235,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
         discipline: String(values.get("discipline")).trim(),
         bio: String(values.get("bio")).trim(),
         is_public: values.has("is_public"),
-      });
+      }, values.get("avatar"), values.has("remove_avatar"));
       setData((current) => ({ ...current, profile }));
       setMessage("Tu perfil quedó guardado.");
       onCatalogChange();
@@ -344,6 +345,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
               key={`${user.id}-${data.profile.version}`}
             >
               <h2>Tu perfil</h2>
+              <AvatarPicker profile={data.profile} disabled={busy} />
               <label>
                 Nombre artístico
                 <input
@@ -380,7 +382,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
               </label>
               <p className="delivery-note">
                 Tu correo es privado. Al activar el perfil se muestran tu nombre
-                artístico, disciplina y presentación una vez habilitada tu
+                artístico, foto, disciplina y presentación una vez habilitada tu
                 participación. Si lo ocultás, tus obras también dejan de
                 aparecer en el catálogo público.
               </p>
