@@ -1,3 +1,5 @@
+> Esta guía corresponde a una etapa anterior. Para instalar la versión actual, seguí primero **PERFILES-Y-OBRAS-v5.md** y ejecutá el esquema actualizado.
+
 # Fotos de perfil · v0.4.0
 
 ## Actualizar tu proyecto

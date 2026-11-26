@@ -1,3 +1,4 @@
+import { WorkFacts, WorkMedia } from "./WorkPresentation";
 import React, { useEffect, useRef, useState } from "react";
 import {
   loadAdmin,
@@ -287,21 +288,7 @@ function ReviewCard({
   return (
     <article className="admin-review account-box">
       <div className="review-preview">
-        {work.image ? (
-          <img className="art-image" src={work.image} alt={work.alt} />
-        ) : (
-          <p className="delivery-note">
-            La portada no se pudo abrir. Actualizá el panel antes de decidir.
-          </p>
-        )}
-        {work.audio && (
-          <audio
-            controls
-            preload="none"
-            src={work.audio}
-            aria-label={`Audio de muestra de ${work.title}`}
-          />
-        )}
+        <WorkMedia key={work.id} work={work} fallback={<p className="delivery-note">La portada no se pudo abrir. Actualizá el panel antes de decidir.</p>} />
       </div>
       <div>
         <p className="eyebrow">
@@ -313,7 +300,8 @@ function ReviewCard({
         <p className="artist-credit">
           {artist?.name || "Artista"} · {work.medium}
         </p>
-        <p className="review-description">{work.details}</p>
+        <p className="review-description preserve-lines">{work.details}</p>
+        <WorkFacts work={work} />
         <p>
           <strong>
             Precio sugerido por el artista {formatPrice(work.price)} ARS

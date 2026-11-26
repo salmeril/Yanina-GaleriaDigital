@@ -1,14 +1,12 @@
-# Galería colectiva · Perfiles y fotos v0.4.0
+# Galería colectiva · Perfiles y obras v0.5.0
 
 React + Vite para trabajar en VS Code. La publicación final está prevista en DonWeb, con Netlify como adelanto de revisión.
 
 Esta versión integra Supabase para registro por correo, acceso, recuperación de contraseña, perfiles y obras persistentes. Cada artista administra su propia sala. El catálogo público muestra los trabajos publicados por perfiles visibles.
 
-Leé **ACTUALIZAR-USUARIOS.md** para instalar esta actualización conservando tu `.env.local`.
+Leé **PERFILES-Y-OBRAS-v5.md** para instalar esta versión conservando tu `.env.local`, actualizar Supabase y probar los perfiles y las obras.
 
-Esta actualización agrega fecha de nacimiento y teléfono al registro, ficha privada para datos personales y domicilio, integración de Turnstile y recuperación ante errores del panel. Requiere ejecutar `supabase/actualizar-datos-privados.sql` si ya tenés una base anterior.
-
-Leé **FOTOS-DE-PERFIL.md** para actualizar con el SQL conjunto y cargar, cambiar o quitar la foto de perfil. La actualización incluye las funciones de usuarios, ficha privada, administración y Turnstile de las versiones anteriores.
+Esta versión agrega enlaces públicos del artista, perfil compartible, seguimiento de estados e historial de revisión. La carga de obras adapta sus campos al formato físico, digital o musical, admite cinco imágenes adicionales y ofrece una vista previa. El catálogo y la administración muestran la misma ficha. Los planes comerciales se dejan para el final.
 
 ## Empezar
 
@@ -36,6 +34,10 @@ El menú muestra Ingresar y Crear cuenta. Sin las dos variables de conexión la 
 - `src/Workspace.jsx` contiene la sesión y los paneles de artistas y administración.
 - `src/AdminDashboard.jsx` contiene habilitación de participantes y revisión de obras.
 - `src/PriceEstimator.jsx` y `src/pricing.js` contienen el orientador de precio por costos.
+- `src/WorkForm.jsx` contiene el formulario adaptable de obras y su vista previa.
+- `src/WorkPresentation.jsx` muestra imágenes y datos de la obra en catálogo, vista previa y revisión.
+- `src/ProfileLinks.jsx` contiene los enlaces del artista y la función para compartir su sala.
+- `src/creator.css` contiene los estilos de perfiles y obras.
 - `src/backend.js` integra autenticación, datos y archivos.
 - `src/data.js` contiene las obras ficticias para el modo de muestra y las etiquetas de formato.
 - `src/styles.css` contiene los estilos base y del panel.

@@ -15,6 +15,10 @@ import { accessRoutes } from "./AccessForm";
 import PanelBoundary from "./PanelBoundary";
 import { Avatar } from "./Avatar";
 import "./accounts.css";
+import { ProfileLinks, ShareProfile } from "./ProfileLinks";
+import { WorkFacts, WorkMedia } from "./WorkPresentation";
+import { canSelectWork, availabilityLabels } from "./work-details";
+import "./creator.css";
 
 function ArtworkImage({ artwork, className = "" }) {
   if (artwork.image)
@@ -138,7 +142,7 @@ function App() {
   const published = artworks.filter((work) => work.status !== "borrador");
   const cartWorks = cart
     .map((id) => artworks.find((work) => work.id === id))
-    .filter(Boolean);
+    .filter(work => work && canSelectWork(work));
   const subtotal = cartWorks.reduce((sum, work) => sum + work.price, 0);
   const hasPhysical = cartWorks.some((work) => work.type === "fisica");
 
@@ -182,6 +186,7 @@ function App() {
   }, [selected]);
 
   function addToCart(work) {
+    if (!canSelectWork(work)) return;
     setCart((current) =>
       current.includes(work.id) ? current : [...current, work.id],
     );
@@ -190,6 +195,7 @@ function App() {
   }
 
   function gallery(items) {
+    if (!items.length) return <p className="empty-state">{catalogLoading ? "Cargando obras…" : "Todavía no hay obras publicadas para este recorrido."}</p>;
     return (
       <div className="art-grid">
         {items.map((work) => (
@@ -228,8 +234,8 @@ function App() {
               <strong>
                 {formatPrice(work.price)} <small>ARS</small>
               </strong>
-              <button onClick={() => addToCart(work)} className="small-button">
-                {cart.includes(work.id) ? "En tu selección ✓" : "Seleccionar +"}
+              <button disabled={!canSelectWork(work)} onClick={() => addToCart(work)} className="small-button">
+                {!canSelectWork(work) ? availabilityLabels[work.availability] : cart.includes(work.id) ? "En tu selección ✓" : "Seleccionar +"}
               </button>
             </div>
           </article>
@@ -595,12 +601,14 @@ function App() {
               <div>
                 <p className="eyebrow">{artist.discipline}</p>
                 <h1 className="page-title">{artist.name}</h1>
-                <p className="lead">{artist.bio}</p>
+                <p className="lead preserve-lines">{artist.bio}</p>
+                <ProfileLinks profile={artist} />
+                <ShareProfile id={artist.id} />
               </div>
             </div>
             <div className="room-heading">
               <h2>Sus obras</h2>
-              <span>{backend ? "Obras publicadas" : "Catálogo de ejemplo"}</span>
+              <span>{published.filter(work => work.artistId === artist.id).length} obras · {backend ? "Publicadas" : "De ejemplo"}</span>
             </div>
             {gallery(published.filter((work) => work.artistId === artist.id))}
           </section>
@@ -784,7 +792,7 @@ function App() {
                 Cerrar ×
               </button>
             </form>
-            <ArtworkImage artwork={selected} />
+            <WorkMedia key={selected.id} work={selected} fallback={<ArtworkImage artwork={selected} />} />
             <div className="dialog-caption">
               <div>
                 <p className="eyebrow">{selected.medium}</p>
@@ -798,7 +806,8 @@ function App() {
                       ?.name
                   }{" "}
                 </a>
-                <p>{selected.details}</p>
+                <p className="preserve-lines">{selected.details}</p>
+                <WorkFacts work={selected} />
                 <p>
                   {formatPrice(selected.price)} ARS{" "}
                   {selected.artist_id ? "" : "· Precio de ejemplo"}
@@ -806,32 +815,14 @@ function App() {
               </div>
               <button
                 className="small-button"
+                disabled={!canSelectWork(selected)}
                 onClick={() => addToCart(selected)}
               >
-                {cart.includes(selected.id)
+                {!canSelectWork(selected) ? availabilityLabels[selected.availability] : cart.includes(selected.id)
                   ? "En tu selección ✓"
                   : "Seleccionar +"}
               </button>
             </div>
-            {selected.audio && (
-              <div className="audio-preview">
-                <audio
-                  controls
-                  preload="none"
-                  src={selected.audio}
-                  aria-label={
-                    selected.artist_id
-                      ? `Audio de muestra de ${selected.title}`
-                      : "Muestra sonora sintética de demostración"
-                  }
-                />
-                <p>
-                  {selected.artist_id
-                    ? "Audio de muestra del autor."
-                    : "Audio sintético de ejemplo para probar el reproductor."}
-                </p>
-              </div>
-            )}
             <p className="demo-note">
               {selected.type === "fisica"
                 ? "Entrega física. El costo y la cobertura del envío se confirmarán antes de pagar."

@@ -1,3 +1,5 @@
+> Esta guía corresponde a una etapa anterior. Para instalar la versión actual, seguí primero **PERFILES-Y-OBRAS-v5.md** y ejecutá el esquema actualizado.
+
 # Activar cuentas y obras permanentes
 
 Esta versión usa Supabase para las cuentas, la base de datos y las portadas o audios de muestra. La web se compila con React y Vite. El alojamiento final será DonWeb. Leé `PUBLICAR-DONWEB.md` para ese destino. Las instrucciones de Netlify de esta guía corresponden al adelanto de revisión.

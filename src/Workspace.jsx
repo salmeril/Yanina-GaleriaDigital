@@ -8,11 +8,12 @@ import {
   setWorkStatus,
   friendlyError,
 } from "./backend";
-import { workTypes, formatPrice } from "./data";
+import { formatPrice } from "./data";
 import AdminDashboard from "./AdminDashboard";
-import PriceEstimator from "./PriceEstimator";
+import WorkForm from "./WorkForm";
+import { profileFields } from "./work-details";
+import { ShareProfile } from "./ProfileLinks";
 import AccessForm from "./AccessForm";
-import { createId } from "./ids";
 import SellerDetails from "./SellerDetails";
 import AvatarPicker from "./Avatar";
 
@@ -193,6 +194,8 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [newKey, setNewKey] = useState(0);
+  const [workFilter, setWorkFilter] = useState("todas");
+  const editorRef = useRef(null);
   const request = useRef(0);
   const participationEnabled =
     data?.membership.status === "habilitada" &&
@@ -232,6 +235,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
     try {
       const profile = await saveProfile(data.profile, {
         name,
+        ...profileFields(values),
         discipline: String(values.get("discipline")).trim(),
         bio: String(values.get("bio")).trim(),
         is_public: values.has("is_public"),
@@ -333,10 +337,12 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                 ? "Podés preparar tus trabajos y enviarlos a revisión."
                 : "Podés preparar tus borradores. La administración debe habilitar tu participación para enviarlos a revisión."}
             </p>
-            <small>
-              La modalidad de publicación se definirá con los futuros planes de
-              la galería.
-            </small>
+
+          </div>
+          <div className="creator-progress" aria-label="Preparar tu sala">
+            <div><strong>Tu perfil</strong><p>{data.profile.bio && data.profile.discipline ? "Presentación cargada" : "Completá tu disciplina y presentación"}</p></div>
+            <div><strong>Tu catálogo</strong><p>{data.works.length ? `${data.works.length} obra(s) cargada(s)` : "Cargá tu primera obra"}</p></div>
+            <div><strong>Tu sala pública</strong><p>{data.profile.is_public && participationEnabled ? `${data.works.filter(work => work.status === "publicada").length} obra(s) publicada(s)` : "Requiere perfil público y habilitación"}</p></div>
           </div>
           <div className="creator-grid">
             <form
@@ -372,6 +378,9 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                   defaultValue={data.profile.bio}
                 />
               </label>
+              <label>Ubicación pública · opcional<input name="public_location" maxLength="120" placeholder="Ej.: Buenos Aires, Argentina" defaultValue={data.profile.public_location} /><small>Solo lo que quieras mostrar; evitá escribir tu domicilio.</small></label>
+              <label>Sitio web · opcional<input name="website" type="url" maxLength="300" placeholder="https://…" defaultValue={data.profile.website} /></label>
+              <label>Instagram · opcional<input name="instagram" type="url" maxLength="300" placeholder="https://www.instagram.com/tuusuario/" defaultValue={data.profile.instagram} /></label>
               <label className="checkbox-label">
                 <input
                   name="is_public"
@@ -382,7 +391,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
               </label>
               <p className="delivery-note">
                 Tu correo es privado. Al activar el perfil se muestran tu nombre
-                artístico, foto, disciplina y presentación una vez habilitada tu
+                artístico, foto, disciplina, presentación, ubicación pública y enlaces una vez habilitada tu
                 participación. Si lo ocultás, tus obras también dejan de
                 aparecer en el catálogo público.
               </p>
@@ -390,13 +399,14 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                 Guardar perfil
               </button>
               {data.profile.is_public &&
-                data.membership.status === "habilitada" && (
+                participationEnabled && (
                   <a className="text-link" href={`#/artistas/${user.id}`}>
                     Ver mi sala
                   </a>
                 )}
+              <ShareProfile id={user.id} enabled={data.profile.is_public && participationEnabled} />
             </form>
-            <div className="account-box">
+            <div className="account-box" ref={editorRef} tabIndex="-1">
               <h2>{editing ? "Editar obra" : "Cargar una obra"}</h2>
               <WorkForm
                 key={editing?.id || `new-${newKey}`}
@@ -424,8 +434,11 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
             su publicación o te dejará una observación. Al editar una obra
             vuelve a borrador.
           </p>
+          <div className="filters" role="group" aria-label="Filtrar tus obras">
+            {Object.entries({ todas: "Todas", borrador: "Borradores", revision: "En revisión", cambios: "Con observaciones", publicada: "Publicadas" }).map(([key, label]) => <button key={key} aria-pressed={workFilter === key} onClick={() => setWorkFilter(key)}>{label} ({data.works.filter(work => key === "todas" || work.status === key).length})</button>)}
+          </div>
           <div className="workspace-works">
-            {data.works.map((work) => (
+            {data.works.filter(work => workFilter === "todas" || work.status === workFilter).map((work) => (
               <article className="draft-card" key={work.id}>
                 {work.image && (
                   <img className="art-image" src={work.image} alt={work.alt} />
@@ -453,6 +466,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                     }
                   </p>
                 )}
+                {data.reviews.filter(review => review.work_id === work.id).length > 0 && <details className="review-history"><summary>Historial de revisión</summary><ul>{data.reviews.filter(review => review.work_id === work.id).map(review => <li key={review.id}><strong>{review.decision === "publicada" ? "Aprobada" : "Cambios solicitados"}</strong> · {new Date(review.created_at).toLocaleDateString("es-AR")}<p>{review.note || "Sin observaciones."}</p></li>)}</ul></details>}
                 <div className="account-actions">
                   <button
                     className="small-button"
@@ -460,6 +474,8 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
                     onClick={() => {
                       setEditing(work);
                       setError("");
+                      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      editorRef.current?.focus({ preventScroll: true });
                     }}
                   >
                     Editar
@@ -483,6 +499,7 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
               </article>
             ))}
           </div>
+          {data.works.length > 0 && !data.works.some(work => workFilter === "todas" || work.status === workFilter) && <p className="empty-state">No tenés obras en este estado.</p>}
           {!data.works.length && (
             <p className="empty-state">Todavía no cargaste obras.</p>
           )}
@@ -492,179 +509,3 @@ function ArtistDashboard({ user, onCatalogChange, onPasswordChange }) {
   );
 }
 
-function WorkForm({ userId, previous, onSaved, onCancel, onBusy }) {
-  const [identity] = useState(() => previous || {});
-  const [type, setType] = useState(previous?.type || "fisica");
-  const [price, setPrice] = useState(previous?.price ?? "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  async function submit(event) {
-    event.preventDefault();
-    const values = new FormData(event.currentTarget);
-    const title = String(values.get("title")).trim();
-    const medium = String(values.get("medium")).trim();
-    const details = String(values.get("details")).trim();
-    const alt = String(values.get("alt")).trim();
-    const price = Number(values.get("price"));
-    if (
-      !title ||
-      !medium ||
-      !details ||
-      !Number.isFinite(price) ||
-      price <= 0 ||
-      price > 999999999
-    ) {
-      setError("Completá título, técnica, descripción y un precio válido.");
-      return;
-    }
-    const cover = values.get("cover");
-    if ((cover.size || identity.cover_path) && !alt) {
-      setError("Describí la portada para que sea accesible.");
-      return;
-    }
-    setBusy(true);
-    onBusy(true);
-    setError("");
-    try {
-      await saveWork(
-        userId,
-        { ...identity, id: identity.id || createId() },
-        {
-          title,
-          type,
-          medium,
-          details,
-          alt,
-          price,
-          status: "borrador",
-        },
-        cover,
-        values.get("audio"),
-      );
-      await onSaved();
-    } catch (failure) {
-      setError(friendlyError(failure));
-    } finally {
-      setBusy(false);
-      onBusy(false);
-    }
-  }
-  return (
-    <>
-      <PriceEstimator currentPrice={price} onApply={setPrice} />
-      <form className="creator-form" onSubmit={submit}>
-        <label>
-          Título
-          <input
-            name="title"
-            required
-            maxLength="100"
-            defaultValue={previous?.title}
-          />
-        </label>
-        <div className="form-row">
-          <label>
-            Formato
-            <select
-              value={type}
-              onChange={(event) => setType(event.target.value)}
-            >
-              {workTypes
-                .filter((item) => item.id !== "todas")
-                .map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label>
-            Precio sugerido por vos · ARS
-            <input
-              name="price"
-              type="number"
-              required
-              min="0.01"
-              step="0.01"
-              max="999999999"
-              value={price}
-              onChange={(event) => setPrice(event.target.value)}
-            />
-          </label>
-        </div>
-        <label>
-          Técnica o disciplina
-          <input
-            name="medium"
-            required
-            maxLength="100"
-            defaultValue={previous?.medium}
-          />
-        </label>
-        <label>
-          {type === "fisica"
-            ? "Descripción, medidas, materiales y presentación"
-            : "Descripción, formato y condiciones de uso"}
-          <textarea
-            name="details"
-            rows="4"
-            maxLength="1500"
-            required
-            defaultValue={previous?.details}
-          />
-        </label>
-        <label>
-          Portada · JPG, PNG o WebP, hasta 5 MB
-          <input
-            name="cover"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-          />
-        </label>
-        {previous?.cover_path && (
-          <small>Si no elegís otra portada, se conserva la actual.</small>
-        )}
-        <label>
-          Descripción visual de la portada
-          <input name="alt" maxLength="250" defaultValue={previous?.alt} />
-        </label>
-        <label>
-          Audio de muestra opcional · MP3, WAV u OGG, hasta 10 MB
-          <input
-            name="audio"
-            type="file"
-            accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg"
-          />
-        </label>
-        {previous?.audio_path && (
-          <small>
-            La obra ya tiene un audio de muestra. Podés reemplazarlo.
-          </small>
-        )}
-        <p className="delivery-note">
-          Cargá únicamente material propio o autorizado. La portada y el audio
-          de muestra serán accesibles al publicar. El archivo digital que se
-          venderá se incorporará en la etapa de pagos y entrega privada.
-        </p>
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-        <div className="account-actions">
-          <button className="button" disabled={busy}>
-            {busy ? "Guardando…" : "Guardar obra"}
-          </button>
-          {previous && (
-            <button
-              type="button"
-              className="small-button"
-              onClick={onCancel}
-              disabled={busy}
-            >
-              Cancelar edición
-            </button>
-          )}
-        </div>
-      </form>
-    </>
-  );
-}

@@ -43,7 +43,7 @@ export async function hydrateProfiles(rows) {
 export async function hydrateWorks(rows) {
   const paths = [
     ...new Set(
-      rows.flatMap((row) => [row.cover_path, row.audio_path]).filter(Boolean),
+      rows.flatMap((row) => [row.cover_path, row.audio_path, ...(row.gallery_images || []).map(item => item.path)]).filter(Boolean),
     ),
   ];
   let urls = new Map();
@@ -64,6 +64,7 @@ export async function hydrateWorks(rows) {
     artistId: row.artist_id,
     image: urls.get(row.cover_path) || "",
     audio: urls.get(row.audio_path) || "",
+    images: (row.gallery_images || []).map(item => ({ ...item, url: urls.get(item.path) || "" })),
     palette: "coral",
   }));
 }
@@ -204,9 +205,16 @@ async function uploadFile(userId, file) {
   return path;
 }
 
-export async function saveWork(userId, previous, fields, cover, audio) {
+export async function saveWork(userId, previous, fields, cover, audio, gallery = null, removeAudio = false) {
   validateFile(cover, "cover");
   validateFile(audio, "audio");
+  const galleryItems = gallery ?? (previous.gallery_images || []);
+  if (galleryItems.length > 5) throw new Error("Podés agregar hasta cinco imágenes además de la portada.");
+  for (const item of galleryItems) {
+    if (!item.alt?.trim() || item.alt.length > 250) throw new Error("Describí cada imagen adicional (hasta 250 caracteres).");
+    if (item.file) validateFile(item.file, "cover");
+    else if (!previous.gallery_images?.some(old => old.path === item.path)) throw new Error("Actualizá el panel antes de volver a guardar las imágenes.");
+  }
   const uploaded = [];
   try {
     const coverPath = cover?.size
@@ -215,10 +223,17 @@ export async function saveWork(userId, previous, fields, cover, audio) {
     if (cover?.size) uploaded.push(coverPath);
     const audioPath = audio?.size
       ? await uploadFile(userId, audio)
-      : previous.audio_path;
+      : removeAudio ? null : previous.audio_path;
     if (audio?.size) uploaded.push(audioPath);
+    const images = [];
+    for (const item of galleryItems) {
+      const path = item.file ? await uploadFile(userId, item.file) : item.path;
+      if (item.file) uploaded.push(path);
+      images.push({ path, alt: item.alt.trim() });
+    }
     const values = {
       ...fields,
+      gallery_images: images,
       cover_path: coverPath || null,
       audio_path: audioPath || null,
     };
@@ -242,9 +257,8 @@ export async function saveWork(userId, previous, fields, cover, audio) {
         "La obra cambió en otra pestaña. Actualizá el panel antes de continuar.",
       );
     // El resultado ya está confirmado en la base. La limpieza no invalida el guardado.
-    const replaced = [previous.cover_path, previous.audio_path].filter(
-      (path) => path && path !== coverPath && path !== audioPath,
-    );
+    const retained = new Set([coverPath, audioPath, ...images.map(item => item.path)]);
+    const replaced = [...new Set([previous.cover_path, previous.audio_path, ...(previous.gallery_images || []).map(item => item.path)])].filter(path => path && !retained.has(path));
     if (replaced.length)
       await backend.storage
         .from(bucket)
@@ -277,6 +291,7 @@ export async function setWorkStatus(work, status) {
 }
 
 export function friendlyError(error) {
+  if (["PGRST204", "42703"].includes(error?.code)) return "Falta actualizar la base de datos. Ejecutá supabase/schema.sql en el SQL Editor y volvé a cargar el panel.";
   if (error?.code === "captcha_failed" || error?.message?.toLowerCase().includes("captcha"))
     return "No pudimos validar la verificación humana. Actualizá la página y completala de nuevo.";
   if (error?.code === "email_address_not_authorized" || error?.message?.includes("Email address not authorized"))

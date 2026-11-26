@@ -1,3 +1,5 @@
+> Esta guía corresponde a una etapa anterior. Para instalar la versión actual, seguí primero **PERFILES-Y-OBRAS-v5.md** y ejecutá el esquema actualizado.
+
 # Usuarios, ficha privada y verificación humana · v0.3.0
 
 Si estás instalando la entrega de fotos v0.4.0, seguí primero **FOTOS-DE-PERFIL.md** y su migración conjunta. Esta guía conserva las instrucciones para activar Turnstile.

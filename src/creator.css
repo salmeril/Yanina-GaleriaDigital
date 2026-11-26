@@ -1,0 +1,48 @@
+/* Perfiles y obras: misma ficha en vista previa, catálogo y revisión. */
+.preserve-lines { white-space: pre-line; overflow-wrap: anywhere; }
+.profile-location { margin-block: 12px; font-size: 16px; color: var(--muted); }
+.profile-links, .profile-share { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+.profile-share > span { font-size: 14px; }
+.share-manual { display: grid; flex-basis: 100%; gap: 8px; font-size: 14px; }
+.share-manual input { width: 100%; min-width: 0; padding: 12px; border: 1px solid #bfafcc; border-radius: 8px; font: inherit; background: white; color: var(--ink); }
+.creator-progress { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; margin-block: 28px; }
+.creator-progress > div { background: #f0e7f8; border: 1px solid #ddc8ea; border-radius: 14px; padding: 20px; }
+.creator-progress p { font-size: 14px; margin-top: 8px; line-height: 1.6; }
+.creator-grid { align-items: start; }
+.creator-grid > *, .creator-form fieldset { min-width: 0; }
+.creator-form label { font-size: 16px; }
+.creator-form input, .creator-form textarea, .creator-form select { font-size: 16px; }
+.creator-form small { font-size: 14px; font-weight: 400; color: var(--muted); }
+.creator-form .checkbox-label input { width: auto; }
+.work-specific { display: grid; gap: 18px; border: 1px solid #d9c6e5; padding: 20px; border-radius: 12px; margin: 0; }
+.work-specific legend { padding-inline: 8px; font-weight: 700; font-size: 16px; }
+.upload-preview { width: 100%; max-height: 230px; object-fit: contain; background: #eee7f5; border-radius: 8px; }
+.extra-image-editor { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 12px; padding-block: 12px; border-bottom: 1px solid #e5dbea; }
+.extra-image-editor > img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; }
+.extra-image-editor > button { grid-column: 1 / -1; justify-self: start; font-size: 14px; }
+.work-local-preview { margin-top: 28px; padding: 20px; border: 2px solid #b599cc; border-radius: 14px; background: #fffcff; scroll-margin-top: 24px; }
+.work-local-preview h3 { margin-block: 20px 12px; font-size: 26px; overflow-wrap: anywhere; }
+.work-local-preview > .eyebrow { margin-bottom: 16px; }
+.work-media { min-width: 0; }
+.work-media > .work-main-image { width: 100%; height: min(60vh,520px); object-fit: contain; background: #eee8f3; }
+.work-thumbnails { display: flex; overflow-x: auto; gap: 10px; padding: 12px 4px; }
+.work-thumbnails button { flex: 0 0 68px; padding: 3px; border: 2px solid transparent; background: transparent; border-radius: 8px; cursor: pointer; }
+.work-thumbnails button[aria-pressed="true"] { border-color: #5b316c; }
+.work-thumbnails img { width: 58px; height: 58px; object-fit: cover; border-radius: 4px; }
+.work-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 24px; margin-block: 22px; }
+.work-facts:empty { display: none; }
+.work-facts > div { min-width: 0; }
+.work-facts dt { font-size: 14px; color: var(--muted); margin-bottom: 5px; }
+.work-facts dd { margin: 0; font-size: 16px; white-space: pre-line; overflow-wrap: anywhere; }
+.review-history { margin-block: 18px; font-size: 14px; }
+.review-history summary { cursor: pointer; font-weight: 600; }
+.review-history ul { padding-left: 20px; }
+.review-history li { margin-top: 14px; }
+.review-history p { white-space: pre-line; margin-top: 6px; }
+.art-dialog .dialog-caption { align-items: start; }
+.art-dialog .dialog-caption > div { min-width: 0; flex: 1; }
+.art-dialog .work-media { padding-top: 16px; }
+button:disabled { cursor: not-allowed; }
+.creator-grid .form-error:empty { display: none; }
+@media(max-width:700px) { .creator-progress { grid-template-columns: minmax(0,1fr); gap: 12px; } .work-specific { padding: 16px 12px; } .work-facts { grid-template-columns: minmax(0,1fr); } .profile-links, .profile-share { gap: 10px; } .extra-image-editor { grid-template-columns: minmax(0,1fr); } }
+.art-dialog .work-media > .art-image { height: min(53dvh,520px); aspect-ratio: auto; object-fit: contain; }

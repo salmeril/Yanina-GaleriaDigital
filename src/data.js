@@ -33,6 +33,7 @@ export const artworks = [
     type: "fisica",
     medium: "Acuarela sobre papel",
     details: "30 × 40 cm · Pieza original · Sin marco",
+    year: 2026, dimensions: "30 × 40 cm", framing: "sin_marco", delivery: "ambos", availability: "disponible",
     price: 85000,
     image: "",
     alt: "",
@@ -57,6 +58,7 @@ export const artworks = [
     type: "digital",
     medium: "Ilustración digital",
     details: "PNG · 3000 × 4000 px · Licencia de uso personal de ejemplo",
+    year: 2026, file_format: "PNG", resolution: "3000 × 4000 px", license: "Licencia de uso personal de ejemplo. Condiciones a validar antes de vender.", deliverables: "Una ilustración digital (ejemplo).", availability: "disponible",
     price: 18000,
     image: "",
     alt: "",
@@ -70,6 +72,7 @@ export const artworks = [
     medium: "Composición instrumental",
     details:
       "Entrega propuesta WAV + partitura PDF · Licencia personal de ejemplo",
+    year: 2026, file_format: "WAV y PDF", deliverables: "Audio y partitura de ejemplo.", license: "Condiciones de uso de ejemplo, pendientes de validar.", availability: "disponible",
     price: 25000,
     image: "",
     alt: "",
